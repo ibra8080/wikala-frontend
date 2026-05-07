@@ -27,7 +27,7 @@ export default function LoginPage() {
       if (meRes.data.role === 'admin') {
         router.push('/admin/dashboard')
       } else {
-        router.push('/seller/dashboard')
+        router.push('/dashboard')
       }
     } catch {
       setError('البريد الإلكتروني أو كلمة المرور غير صحيحة')
