@@ -15,7 +15,7 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-56 min-h-screen bg-[#F5F4F0] border-r border-[#E0DDDA] pt-6 flex flex-col">
+    <aside className="w-56 min-h-full bg-[#F5F4F0] border-r border-[#E0DDDA] pt-6 flex flex-col">
       <div className="px-4 mb-6">
         <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-widest">
           Seller Portal
@@ -41,9 +41,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="px-4 py-4 border-t border-[#E0DDDA]">
-        <p className="text-xs text-[#6B6560]">© 2026 Wikala</p>
-      </div>
     </aside>
   )
 }
