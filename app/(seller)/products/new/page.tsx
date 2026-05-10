@@ -56,28 +56,23 @@ export default function NewProductPage() {
     setLoading(true)
     setError('')
     try {
-      const productRes = await api.post('/products/', {
+      await api.post('/products/', {
         name_en: form.name_en,
         name_ar: form.name_ar,
-        description_en: form.description_en,
-        description_ar: form.description_ar,
+        description_en: form.description_en || '',
+        description_ar: form.description_ar || '',
         price: parseFloat(form.price),
-        weight_kg: parseFloat(form.weight_kg),
-        length_cm: parseFloat(form.length_cm),
-        width_cm: parseFloat(form.width_cm),
-        height_cm: parseFloat(form.height_cm),
+        unit_weight_kg: parseFloat(form.weight_kg),
+        unit_length_cm: parseFloat(form.length_cm),
+        unit_width_cm: parseFloat(form.width_cm),
+        unit_height_cm: parseFloat(form.height_cm),
+        variants: variants.map(v => ({
+          color: v.color,
+          size: v.size,
+          external_barcode: v.external_barcode,
+          quantity_submitted: parseInt(String(v.quantity_submitted)),
+        })),
       })
-
-      const productId = productRes.data.id
-      console.log('Product ID:', productId)
-
-      for (const variant of variants) {
-        await api.post(`/products/${productId}/variants/`, {
-          ...variant,
-          quantity_submitted: parseInt(String(variant.quantity_submitted)),
-        })
-      }
-
       router.push('/products')
     } catch {
       setError('Something went wrong. Please check your inputs and try again.')
