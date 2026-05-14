@@ -24,12 +24,17 @@ interface ShipmentRequest {
   request_number: string
   seller_name: string
   requested_date: string
+  request_date: string
   status: string
   notes: string
   delivery_date: string | null
   delivery_method: string
   delivery_notes: string
   created_at: string
+  available_from: string
+  delivery_address: string
+  contact_person: string
+  contact_number: string
   items: ShipmentItem[]
 }
 
@@ -60,7 +65,6 @@ export default function AdminShipmentsPage() {
 
   const [acceptForm, setAcceptForm] = useState({
     delivery_date: '',
-    delivery_method: 'pickup',
     delivery_notes: '',
   })
 
@@ -80,17 +84,16 @@ export default function AdminShipmentsPage() {
   }, [user, router, fetchRequests])
 
   const handleAccept = async (id: number) => {
-    if (!acceptForm.delivery_date || !acceptForm.delivery_method) return
+    if (!acceptForm.delivery_date) return
     setActionLoading(id)
     try {
       await api.patch(`/inventory/admin/shipment-requests/${id}/`, {
         status: 'accepted',
         delivery_date: acceptForm.delivery_date,
-        delivery_method: acceptForm.delivery_method,
         delivery_notes: acceptForm.delivery_notes,
       })
       setAcceptingId(null)
-      setAcceptForm({ delivery_date: '', delivery_method: 'pickup', delivery_notes: '' })
+      setAcceptForm({ delivery_date: '', delivery_notes: '' })
       await fetchRequests()
     } finally {
       setActionLoading(null)
@@ -155,8 +158,10 @@ export default function AdminShipmentsPage() {
 
               <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <p className="text-xs text-[#6B6560]">Requested date</p>
-                  <p className="text-sm text-[#1B2A4A] font-medium">{req.requested_date}</p>
+                  <p className="text-xs text-[#6B6560]">Submitted</p>
+                  <p className="text-sm text-[#1B2A4A] font-medium">
+                    {new Date(req.request_date).toLocaleDateString('en-GB')}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-[#6B6560]">Items</p>
@@ -207,6 +212,42 @@ export default function AdminShipmentsPage() {
                   </table>
                 </div>
 
+                {/* Seller Delivery Info */}
+                <div className="px-6 py-4 border-t border-[#E0DDDA] grid grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Delivery Preference</p>
+                    <div className="space-y-2">
+                      <div className="flex gap-2 text-sm">
+                        <span className="text-[#6B6560] w-32">Method</span>
+                        <span className="text-[#1B2A4A] font-medium">{deliveryMethodLabels[req.delivery_method] ?? req.delivery_method}</span>
+                      </div>
+                      {req.delivery_address && (
+                        <div className="flex gap-2 text-sm">
+                          <span className="text-[#6B6560] w-32">Address</span>
+                          <span className="text-[#1B2A4A]">{req.delivery_address}</span>
+                        </div>
+                      )}
+                      <div className="flex gap-2 text-sm">
+                        <span className="text-[#6B6560] w-32">Available From</span>
+                        <span className="text-[#1B2A4A] font-medium">{req.available_from}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Contact Information</p>
+                    <div className="space-y-2">
+                      <div className="flex gap-2 text-sm">
+                        <span className="text-[#6B6560] w-32">Person</span>
+                        <span className="text-[#1B2A4A] font-medium">{req.contact_person}</span>
+                      </div>
+                      <div className="flex gap-2 text-sm">
+                        <span className="text-[#6B6560] w-32">Number</span>
+                        <span className="text-[#1B2A4A]">{req.contact_number}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Notes */}
                 {req.notes && (
                   <div className="px-6 pb-4">
@@ -243,28 +284,17 @@ export default function AdminShipmentsPage() {
                   <div className="px-6 pb-4 border-t border-[#E0DDDA] pt-4">
                     {acceptingId === req.id ? (
                       <div className="space-y-3">
-                        <p className="text-sm font-semibold text-[#1B2A4A]">Set delivery details</p>
-                        <div className="grid grid-cols-3 gap-3">
+                        <p className="text-sm font-semibold text-[#1B2A4A]">Confirm delivery details</p>
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-xs text-[#6B6560] mb-1">Delivery Date</label>
+                            <label className="block text-xs text-[#6B6560] mb-1">Delivery Date <span className="text-red-400">*</span></label>
                             <input
                               type="date"
                               value={acceptForm.delivery_date}
                               onChange={e => setAcceptForm(p => ({ ...p, delivery_date: e.target.value }))}
+                              min={req.available_from}
                               className="w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A]"
                             />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#6B6560] mb-1">Delivery Method</label>
-                            <select
-                              value={acceptForm.delivery_method}
-                              onChange={e => setAcceptForm(p => ({ ...p, delivery_method: e.target.value }))}
-                              className="w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A]"
-                            >
-                              <option value="pickup">Pickup by Wikala</option>
-                              <option value="courier">Courier</option>
-                              <option value="drop_off">Drop Off at Wikala</option>
-                            </select>
                           </div>
                           <div>
                             <label className="block text-xs text-[#6B6560] mb-1">Notes (optional)</label>

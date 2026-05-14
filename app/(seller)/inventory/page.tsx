@@ -234,7 +234,7 @@ export default function InventoryPage() {
                       </div>
                       {req.delivery_notes && (
                         <div>
-                          <p className="text-xs text-green-600">Notes</p>
+                          <p className="text-xs text-green-600">Notes from Wikala</p>
                           <p className="text-sm font-medium text-green-800">{req.delivery_notes}</p>
                         </div>
                       )}
