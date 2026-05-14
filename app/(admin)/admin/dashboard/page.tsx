@@ -34,11 +34,11 @@ export default function AdminDashboard() {
       const shipments = shipmentsRes.data
 
       setStats({
-        pending_sellers: sellers.filter((s: any) => s.status === 'pending').length,
-        pending_products: products.filter((p: any) => p.status === 'pending_review').length,
-        pending_shipments: shipments.filter((s: any) => s.status === 'submitted').length,
-        total_sellers: sellers.filter((s: any) => s.status === 'approved').length,
-        total_products: products.filter((p: any) => p.status === 'listed').length,
+        pending_sellers: sellers.filter((s: { status: string }) => s.status === 'pending').length,
+        pending_products: products.filter((p: { status: string }) => p.status === 'pending_review').length,
+        pending_shipments: shipments.filter((s: { status: string }) => s.status === 'submitted').length,
+        total_sellers: sellers.filter((s: { status: string }) => s.status === 'approved').length,
+        total_products: products.filter((p: { status: string }) => p.status === 'listed').length,
       })
     }).finally(() => setLoading(false))
   }, [user, router])

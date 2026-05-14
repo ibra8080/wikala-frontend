@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
@@ -31,21 +31,20 @@ export default function AdminSellersPage() {
   const [filter, setFilter] = useState('pending')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
 
-  useEffect(() => {
-    if (!user) { router.push('/login'); return }
-    if (user.role !== 'admin') { router.push('/dashboard'); return }
-    fetchSellers()
-  }, [user, router])
-
-  const fetchSellers = async () => {
-    setLoading(true)
+  const fetchSellers = useCallback(async () => {
     try {
       const res = await api.get('/sellers/admin/list/')
       setSellers(res.data)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!user) { router.push('/login'); return }
+    if (user.role !== 'admin') { router.push('/dashboard'); return }
+    void fetchSellers()
+  }, [user, router, fetchSellers])
 
   const handleAction = async (sellerId: number, action: 'approved' | 'rejected') => {
     setActionLoading(sellerId)
