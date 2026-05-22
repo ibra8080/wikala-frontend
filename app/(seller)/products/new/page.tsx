@@ -479,7 +479,7 @@ export default function NewProductPage() {
         {step === 4 && (
           <div className="space-y-5">
             <p className="text-sm text-[#6B6560]">
-              Add at least one variant. If your product has no color or size options, leave those fields empty.
+              Add at least one variant. If your product has no color or size variations, add a single variant and leave the color and size fields empty — this will represent the default version of your product and allow you to assign a barcode to it.
             </p>
 
             {variants.map((variant, index) => (
