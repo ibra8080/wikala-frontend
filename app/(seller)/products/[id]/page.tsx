@@ -19,7 +19,6 @@ interface ProductVariant {
   size: string
   sku: string
   external_barcode: string
-  quantity_submitted: number
 }
 
 interface Product {
@@ -50,6 +49,73 @@ interface Product {
   created_at: string
 }
 
+const inputClass = "w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A] transition"
+
+function Field({
+  label, field, value, type = 'text', multiline = false,
+  editingField, editValues, saving,
+  onEdit, onSave, onCancel, onValueChange,
+}: {
+  label: string
+  field: string
+  value: string
+  type?: string
+  multiline?: boolean
+  editingField: string | null
+  editValues: Record<string, string>
+  saving: boolean
+  onEdit: (field: string, value: string) => void
+  onSave: (field: string | string[]) => void
+  onCancel: () => void
+  onValueChange: (field: string, value: string) => void
+}) {
+  return (
+    <div className="py-3 border-b border-[#F5F4F0] last:border-0">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <p className="text-xs text-[#6B6560] mb-1">{label}</p>
+          {editingField === field ? (
+            <div className="flex gap-2 items-start mt-1">
+              {multiline ? (
+                <textarea
+                  value={editValues[field] ?? ''}
+                  onChange={e => onValueChange(field, e.target.value)}
+                  rows={3}
+                  className={inputClass + ' resize-none flex-1'}
+                />
+              ) : (
+                <input
+                  type={type}
+                  value={editValues[field] ?? ''}
+                  onChange={e => onValueChange(field, e.target.value)}
+                  className={inputClass + ' flex-1'}
+                />
+              )}
+              <button onClick={() => void onSave(field)}
+                disabled={saving}
+                className="bg-[#1B2A4A] text-white px-3 py-2 rounded-lg text-xs font-medium disabled:opacity-50 whitespace-nowrap">
+                {saving ? '...' : 'Save'}
+              </button>
+              <button onClick={onCancel}
+                className="text-xs text-[#6B6560] px-2 py-2 hover:text-[#1B2A4A]">
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-[#1B2A4A] mt-0.5">{value || '—'}</p>
+          )}
+        </div>
+        {editingField !== field && (
+          <button onClick={() => onEdit(field, value)}
+            className="text-xs text-[#C8952E] hover:underline mt-4 whitespace-nowrap">
+            Edit
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const statusStyles: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
   pending_review: 'bg-amber-50 text-amber-700 border border-amber-200',
@@ -74,6 +140,8 @@ const statusLabels: Record<string, string> = {
   listed: 'Listed',
 }
 
+type EditingField = string | null
+
 export default function ProductProfilePage() {
   const router = useRouter()
   const params = useParams()
@@ -82,15 +150,14 @@ export default function ProductProfilePage() {
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
   const [deleting, setDeleting] = useState(false)
-  const [editingCost, setEditingCost] = useState(false)
-  const [productionCost, setProductionCost] = useState('')
-  const [costSaving, setCostSaving] = useState(false)
+  const [editingField, setEditingField] = useState<EditingField>(null)
+  const [saving, setSaving] = useState(false)
+  const [editValues, setEditValues] = useState<Record<string, string>>({})
 
   const fetchProduct = useCallback(async () => {
     try {
       const res = await api.get(`/products/${params.id}/`)
       setProduct(res.data)
-      setProductionCost(res.data.production_cost ?? '')
     } finally {
       setLoading(false)
     }
@@ -101,6 +168,28 @@ export default function ProductProfilePage() {
     void fetchProduct()
   }, [user, router, fetchProduct])
 
+  const startEdit = (field: string, value: string) => {
+    setEditingField(field)
+    setEditValues(prev => ({ ...prev, [field]: value ?? '' }))
+  }
+
+  const cancelEdit = () => setEditingField(null)
+
+  const saveField = async (field: string | string[]) => {
+    if (!product) return
+    setSaving(true)
+    try {
+      const fields = Array.isArray(field) ? field : [field]
+      const payload: Record<string, string> = {}
+      fields.forEach(f => { payload[f] = editValues[f] })
+      await api.patch(`/products/${product.id}/`, payload)
+      setEditingField(null)
+      await fetchProduct()
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleDelete = async () => {
     if (!product) return
     const activeStatuses = ['approved', 'awaiting_seller_shipment', 'in_warehouse_egypt', 'in_transit', 'in_warehouse_germany', 'listed']
@@ -108,7 +197,7 @@ export default function ProductProfilePage() {
       alert('This product is active. Please contact Wikala to request deletion.')
       return
     }
-    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return
+    if (!confirm('Are you sure you want to delete this product?')) return
     setDeleting(true)
     try {
       await api.delete(`/products/${product.id}/`)
@@ -119,16 +208,83 @@ export default function ProductProfilePage() {
     }
   }
 
-  const handleSaveCost = async () => {
-    if (!product) return
-    setCostSaving(true)
+  const handleDeleteImage = async (imageId: number) => {
+    if (!confirm('Delete this image?')) return
     try {
-      await api.patch(`/products/${product.id}/`, { production_cost: productionCost || null })
-      setEditingCost(false)
+      await api.delete(`/products/${product!.id}/images/${imageId}/`)
+      await fetchProduct()
+    } catch {
+      alert('Failed to delete image.')
+    }
+  }
+
+  const handleAddImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if ((product?.images.length ?? 0) + files.length > 12) {
+      alert('Maximum 12 images allowed.')
+      return
+    }
+    for (const file of files) {
+      const formData = new FormData()
+      formData.append('image', file)
+      await api.post(`/products/${product!.id}/images/upload/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    }
+    await fetchProduct()
+  }
+
+  const handleDeleteVariant = async (variantId: number) => {
+    if (!confirm('Delete this variant?')) return
+    try {
+      await api.delete(`/products/${product!.id}/variants/${variantId}/`)
+      await fetchProduct()
+    } catch {
+      alert('Failed to delete variant.')
+    }
+  }
+
+  const [editingVariant, setEditingVariant] = useState<number | null>(null)
+  const [variantEdit, setVariantEdit] = useState({ color: '', size: '' })
+  const [addingVariant, setAddingVariant] = useState(false)
+  const [newVariant, setNewVariant] = useState({ color: '', size: '', external_barcode: '' })
+
+  const handleSaveVariant = async (variantId: number) => {
+    setSaving(true)
+    try {
+      await api.patch(`/products/${product!.id}/variants/${variantId}/`, variantEdit)
+      setEditingVariant(null)
       await fetchProduct()
     } finally {
-      setCostSaving(false)
+      setSaving(false)
     }
+  }
+
+  const handleAddVariant = async () => {
+    setSaving(true)
+    try {
+      await api.post(`/products/${product!.id}/variants/`, {
+        ...newVariant,
+        quantity_submitted: 0,
+      })
+      setAddingVariant(false)
+      setNewVariant({ color: '', size: '', external_barcode: '' })
+      await fetchProduct()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const canDelete = !['approved', 'awaiting_seller_shipment', 'in_warehouse_egypt', 'in_transit', 'in_warehouse_germany', 'listed'].includes(product?.status ?? '')
+
+  const fieldProps = {
+    editingField,
+    editValues,
+    saving,
+    onEdit: startEdit,
+    onSave: saveField,
+    onCancel: cancelEdit,
+    onValueChange: (field: string, value: string) => setEditValues(p => ({ ...p, [field]: value })),
   }
 
   if (loading) return (
@@ -143,36 +299,24 @@ export default function ProductProfilePage() {
     </div>
   )
 
-  const canDelete = !['approved', 'awaiting_seller_shipment', 'in_warehouse_egypt', 'in_transit', 'in_warehouse_germany', 'listed'].includes(product.status)
-
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <Link href="/products" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">
-            ← Back to Products
-          </Link>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/products/${product.id}/edit`}
-            className="border border-[#E0DDDA] text-[#1B2A4A] px-4 py-2 rounded-lg text-sm font-medium hover:border-[#1B2A4A] transition"
-          >
-            Edit Product
-          </Link>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition
-              ${canDelete
-                ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                : 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
-              }`}
-          >
-            {deleting ? 'Deleting...' : canDelete ? 'Delete Product' : 'Request Deletion'}
-          </button>
-        </div>
+        <Link href="/products" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">
+          ← Back to Products
+        </Link>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition
+            ${canDelete
+              ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
+              : 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
+            }`}
+        >
+          {deleting ? 'Deleting...' : canDelete ? 'Delete Product' : 'Request Deletion'}
+        </button>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
@@ -180,191 +324,230 @@ export default function ProductProfilePage() {
         <div>
           <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden mb-3">
             {product.images.length > 0 ? (
-              <img
-                src={product.images[activeImage]?.image_url}
-                alt={product.name_en}
-                className="w-full aspect-square object-cover"
-              />
+              <div className="relative group">
+                <img src={product.images[activeImage]?.image_url} alt={product.name_en}
+                  className="w-full aspect-square object-cover" />
+                <button
+                  onClick={() => handleDeleteImage(product.images[activeImage].id)}
+                  className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                >
+                  Delete
+                </button>
+              </div>
             ) : (
               <div className="w-full aspect-square bg-[#F5F4F0] flex items-center justify-center">
                 <p className="text-sm text-[#6B6560]">No images</p>
               </div>
             )}
           </div>
-          {product.images.length > 1 && (
-            <div className="grid grid-cols-4 gap-2">
-              {product.images.map((img, i) => (
-                <button
-                  key={img.id}
-                  onClick={() => setActiveImage(i)}
-                  className={`aspect-square rounded-lg overflow-hidden border-2 transition
-                    ${activeImage === i ? 'border-[#C8952E]' : 'border-transparent'}`}
-                >
-                  <img src={img.image_url} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
+
+          {/* Thumbnails */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {product.images.map((img, i) => (
+              <button key={img.id} onClick={() => setActiveImage(i)}
+                className={`aspect-square rounded-lg overflow-hidden border-2 transition
+                  ${activeImage === i ? 'border-[#C8952E]' : 'border-transparent'}`}>
+                <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+
+          {/* Add Images */}
+          {product.images.length < 12 && (
+            <label className="block w-full border border-dashed border-[#C8952E] text-[#C8952E] rounded-xl py-2.5 text-sm font-medium text-center hover:bg-[#F5F4F0] transition cursor-pointer mb-3">
+              + Add Photos ({product.images.length}/12)
+              <input type="file" accept="image/*" multiple className="hidden"
+                onChange={handleAddImages} />
+            </label>
           )}
+
+          {/* Status + Code */}
+          <div className="bg-white rounded-2xl border border-[#E0DDDA] p-4 mt-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[#6B6560]">Status</p>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusStyles[product.status] ?? ''}`}>
+                {statusLabels[product.status] ?? product.status}
+              </span>
+            </div>
+            <div>
+              <p className="text-xs text-[#6B6560] mb-1">Product Code</p>
+              <p className="font-mono font-medium text-sm text-[#1B2A4A]">{product.product_code || '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-[#6B6560] mb-1">Added</p>
+              <p className="text-sm text-[#1B2A4A]">{new Date(product.created_at).toLocaleDateString('en-GB')}</p>
+            </div>
+          </div>
         </div>
 
         {/* Right — Details */}
         <div className="col-span-2 space-y-4">
+
           {/* Basic Info */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-xl font-bold text-[#1B2A4A]">{product.name_en}</h1>
-                <p className="text-sm text-[#6B6560] mt-0.5" dir="rtl">{product.name_ar}</p>
-              </div>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusStyles[product.status] ?? ''}`}>
-                {statusLabels[product.status] ?? product.status}
-              </span>
+            <h2 className="font-semibold text-[#1B2A4A] mb-2">Basic Information</h2>
+
+            {/* Name — read only */}
+            <div className="py-3 border-b border-[#F5F4F0]">
+              <p className="text-xs text-[#6B6560] mb-1">Product Name (English)</p>
+              <p className="text-sm font-medium text-[#1B2A4A]">{product.name_en}</p>
+            </div>
+            <div className="py-3 border-b border-[#F5F4F0]">
+              <p className="text-xs text-[#6B6560] mb-1">Product Name (Arabic)</p>
+              <p className="text-sm font-medium text-[#1B2A4A]" dir="rtl">{product.name_ar}</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="text-xs text-[#6B6560] mb-1">Product Code</p>
-                <p className="font-mono font-medium text-[#1B2A4A]">{product.product_code || '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[#6B6560] mb-1">Price</p>
-                <p className="font-semibold text-[#1B2A4A]">€{product.price}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[#6B6560] mb-1">Added</p>
-                <p className="text-[#1B2A4A]">{new Date(product.created_at).toLocaleDateString('en-GB')}</p>
-              </div>
-            </div>
-
-            {/* Production Cost */}
-            <div className="mt-4 pt-4 border-t border-[#E0DDDA]">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-[#6B6560]">Production Cost (EUR)</p>
-                <button
-                  onClick={() => setEditingCost(!editingCost)}
-                  className="text-xs text-[#C8952E] hover:underline"
-                >
-                  {editingCost ? 'Cancel' : 'Edit'}
-                </button>
-              </div>
-              {editingCost ? (
-                <div className="flex gap-2 mt-2">
-                  <input
-                    type="number"
-                    value={productionCost}
-                    onChange={e => setProductionCost(e.target.value)}
-                    placeholder="0.00"
-                    className="flex-1 border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A]"
-                  />
-                  <button
-                    onClick={handleSaveCost}
-                    disabled={costSaving}
-                    className="bg-[#1B2A4A] text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
-                  >
-                    {costSaving ? 'Saving...' : 'Save'}
-                  </button>
-                </div>
-              ) : (
-                <p className="text-sm font-medium text-[#1B2A4A] mt-1">
-                  {product.production_cost ? `€${product.production_cost}` : '—'}
-                </p>
-              )}
-            </div>
+            <Field label="Price (EUR)" field="price" value={product.price} type="number" {...fieldProps} />
+            <Field label="Production Cost (EUR)" field="production_cost" value={product.production_cost ?? ''} type="number" {...fieldProps} />
           </div>
 
           {/* Description */}
-          {(product.description_en || product.description_ar) && (
-            <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
-              <h2 className="font-semibold text-[#1B2A4A] mb-3">Description</h2>
-              {product.description_en && <p className="text-sm text-[#6B6560] mb-2">{product.description_en}</p>}
-              {product.description_ar && <p className="text-sm text-[#6B6560]" dir="rtl">{product.description_ar}</p>}
-            </div>
-          )}
+          <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
+            <h2 className="font-semibold text-[#1B2A4A] mb-2">Description</h2>
+            <Field label="Description (English)" field="description_en" value={product.description_en} multiline {...fieldProps} />
+            <Field label="Description (Arabic)" field="description_ar" value={product.description_ar} multiline {...fieldProps} />
+          </div>
 
           {/* Technical Specs */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
-            <h2 className="font-semibold text-[#1B2A4A] mb-4">Technical Specifications</h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {product.brand_name && (
-                <div>
-                  <p className="text-xs text-[#6B6560] mb-1">Brand</p>
-                  <p className="text-[#1B2A4A]">{product.brand_name}</p>
-                </div>
-              )}
-              {product.model_number && (
-                <div>
-                  <p className="text-xs text-[#6B6560] mb-1">Model</p>
-                  <p className="text-[#1B2A4A]">{product.model_number}</p>
-                </div>
-              )}
-              {product.materials && (
-                <div>
-                  <p className="text-xs text-[#6B6560] mb-1">Material</p>
-                  <p className="text-[#1B2A4A]">{product.materials}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-xs text-[#6B6560] mb-1">Dimensions (cm)</p>
-                <p className="text-[#1B2A4A]">{product.unit_length_cm} × {product.unit_width_cm} × {product.unit_height_cm}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[#6B6560] mb-1">Weight</p>
-                <p className="text-[#1B2A4A]">{product.unit_weight_kg} kg</p>
-              </div>
-              {product.custom_specs?.map((spec, i) => (
-                <div key={i}>
-                  <p className="text-xs text-[#6B6560] mb-1">{spec.key}</p>
-                  <p className="text-[#1B2A4A]">{spec.value}</p>
-                </div>
-              ))}
-            </div>
+            <h2 className="font-semibold text-[#1B2A4A] mb-2">Technical Specifications</h2>
+            <Field label="Brand" field="brand_name" value={product.brand_name} {...fieldProps} />
+            <Field label="Model Number" field="model_number" value={product.model_number} {...fieldProps} />
+            <Field label="Material" field="materials" value={product.materials} {...fieldProps} />
+            <Field label="Weight (kg)" field="unit_weight_kg" value={product.unit_weight_kg} type="number" {...fieldProps} />
+            <Field label="Length (cm)" field="unit_length_cm" value={product.unit_length_cm} type="number" {...fieldProps} />
+            <Field label="Width (cm)" field="unit_width_cm" value={product.unit_width_cm} type="number" {...fieldProps} />
+            <Field label="Height (cm)" field="unit_height_cm" value={product.unit_height_cm} type="number" {...fieldProps} />
           </div>
 
           {/* Packaging */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
-            <h2 className="font-semibold text-[#1B2A4A] mb-4">Packaging</h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-xs text-[#6B6560] mb-1">Carton Dimensions (cm)</p>
-                <p className="text-[#1B2A4A]">{product.carton_length_cm} × {product.carton_width_cm} × {product.carton_height_cm}</p>
-              </div>
-              <div>
-                <p className="text-xs text-[#6B6560] mb-1">Carton Weight</p>
-                <p className="text-[#1B2A4A]">{product.carton_weight_kg} kg</p>
-              </div>
-              <div>
-                <p className="text-xs text-[#6B6560] mb-1">Units per Carton</p>
-                <p className="text-[#1B2A4A] font-medium">{product.units_per_carton}</p>
-              </div>
-            </div>
+            <h2 className="font-semibold text-[#1B2A4A] mb-2">Packaging</h2>
+            <Field label="Carton Weight (kg)" field="carton_weight_kg" value={product.carton_weight_kg} type="number" {...fieldProps} />
+            <Field label="Carton Length (cm)" field="carton_length_cm" value={product.carton_length_cm} type="number" {...fieldProps} />
+            <Field label="Carton Width (cm)" field="carton_width_cm" value={product.carton_width_cm} type="number" {...fieldProps} />
+            <Field label="Carton Height (cm)" field="carton_height_cm" value={product.carton_height_cm} type="number" {...fieldProps} />
+            <Field label="Units per Carton" field="units_per_carton" value={String(product.units_per_carton)} type="number" {...fieldProps} />
           </div>
 
           {/* Variants */}
-          {product.variants.length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
-              <h2 className="font-semibold text-[#1B2A4A] mb-4">Variants</h2>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[#E0DDDA]">
-                    <th className="text-left text-xs text-[#6B6560] pb-2">SKU</th>
-                    <th className="text-left text-xs text-[#6B6560] pb-2">Color</th>
-                    <th className="text-left text-xs text-[#6B6560] pb-2">Size</th>
-                    <th className="text-left text-xs text-[#6B6560] pb-2">Barcode</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {product.variants.map(v => (
-                    <tr key={v.id} className="border-b border-[#E0DDDA] last:border-0">
-                      <td className="py-2 font-mono text-xs text-[#6B6560]">{v.sku || '—'}</td>
-                      <td className="py-2 text-[#1B2A4A]">{v.color || '—'}</td>
-                      <td className="py-2 text-[#1B2A4A]">{v.size || '—'}</td>
-                      <td className="py-2 text-[#6B6560]">{v.external_barcode || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-[#1B2A4A]">Variants</h2>
+              <button
+                onClick={() => setAddingVariant(true)}
+                className="text-xs text-[#C8952E] hover:underline"
+              >
+                + Add Variant
+              </button>
             </div>
-          )}
+
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#E0DDDA]">
+                  <th className="text-left text-xs text-[#6B6560] pb-2">SKU</th>
+                  <th className="text-left text-xs text-[#6B6560] pb-2">Color</th>
+                  <th className="text-left text-xs text-[#6B6560] pb-2">Size</th>
+                  <th className="text-left text-xs text-[#6B6560] pb-2">Barcode</th>
+                  <th className="pb-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {product.variants.map(v => (
+                  <tr key={v.id} className="border-b border-[#E0DDDA] last:border-0">
+                    <td className="py-2 font-mono text-xs text-[#6B6560]">{v.sku || '—'}</td>
+                    <td className="py-2">
+                      {editingVariant === v.id ? (
+                        <input value={variantEdit.color}
+                          onChange={e => setVariantEdit(p => ({ ...p, color: e.target.value }))}
+                          className="w-20 border border-[#E0DDDA] rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1B2A4A]"
+                        />
+                      ) : (
+                        <span className="text-[#1B2A4A]">{v.color || '—'}</span>
+                      )}
+                    </td>
+                    <td className="py-2">
+                      {editingVariant === v.id ? (
+                        <input value={variantEdit.size}
+                          onChange={e => setVariantEdit(p => ({ ...p, size: e.target.value }))}
+                          className="w-16 border border-[#E0DDDA] rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1B2A4A]"
+                        />
+                      ) : (
+                        <span className="text-[#1B2A4A]">{v.size || '—'}</span>
+                      )}
+                    </td>
+                    <td className="py-2 text-[#6B6560] text-xs">{v.external_barcode || '—'}</td>
+                    <td className="py-2">
+                      {editingVariant === v.id ? (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleSaveVariant(v.id)}
+                            disabled={saving}
+                            className="text-xs bg-[#1B2A4A] text-white px-2 py-1 rounded disabled:opacity-50">
+                            Save
+                          </button>
+                          <button onClick={() => setEditingVariant(null)}
+                            className="text-xs text-[#6B6560]">
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-3">
+                          <button onClick={() => { setEditingVariant(v.id); setVariantEdit({ color: v.color, size: v.size }) }}
+                            className="text-xs text-[#C8952E] hover:underline">
+                            Edit
+                          </button>
+                          <button onClick={() => handleDeleteVariant(v.id)}
+                            className="text-xs text-red-400 hover:text-red-600">
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+
+                {/* Add Variant Row */}
+                {addingVariant && (
+                  <tr className="border-b border-[#E0DDDA]">
+                    <td className="py-2 text-xs text-[#6B6560]">—</td>
+                    <td className="py-2">
+                      <input value={newVariant.color}
+                        onChange={e => setNewVariant(p => ({ ...p, color: e.target.value }))}
+                        placeholder="Color"
+                        className="w-20 border border-[#E0DDDA] rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1B2A4A]"
+                      />
+                    </td>
+                    <td className="py-2">
+                      <input value={newVariant.size}
+                        onChange={e => setNewVariant(p => ({ ...p, size: e.target.value }))}
+                        placeholder="Size"
+                        className="w-16 border border-[#E0DDDA] rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1B2A4A]"
+                      />
+                    </td>
+                    <td className="py-2">
+                      <input value={newVariant.external_barcode}
+                        onChange={e => setNewVariant(p => ({ ...p, external_barcode: e.target.value }))}
+                        placeholder="Barcode"
+                        className="w-28 border border-[#E0DDDA] rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1B2A4A]"
+                      />
+                    </td>
+                    <td className="py-2">
+                      <div className="flex gap-2">
+                        <button onClick={handleAddVariant} disabled={saving}
+                          className="text-xs bg-[#C8952E] text-white px-2 py-1 rounded disabled:opacity-50">
+                          Add
+                        </button>
+                        <button onClick={() => setAddingVariant(false)}
+                          className="text-xs text-[#6B6560]">
+                          Cancel
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
