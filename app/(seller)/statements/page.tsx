@@ -216,7 +216,7 @@ export default function StatementsPage() {
               </div>
 
               <p className="text-xs text-[#6B6560] bg-[#F5F4F0] rounded-xl px-4 py-3 border border-[#E0DDDA]">
-                ⚠️ These figures are preliminary estimates. Final amounts are confirmed monthly by Wikala's accounting team and reflected in your monthly statement.
+                ⚠️ These figures are preliminary estimates. Final amounts are confirmed monthly by Wikala&apos;s accounting team and reflected in your monthly statement.
               </p>
             </>
           )}
@@ -231,7 +231,7 @@ export default function StatementsPage() {
               <p className="text-4xl mb-4">🧾</p>
               <p className="text-lg font-semibold text-[#1B2A4A] mb-2">No statements yet</p>
               <p className="text-sm text-[#6B6560]">
-                Monthly statements are issued by Wikala's accounting team at the end of each month.
+                Monthly statements are issued by Wikala&apos;s accounting team at the end of each month.
               </p>
             </div>
           ) : (
