@@ -12,6 +12,10 @@ interface Stats {
   pending_shipments: number
   total_sellers: number
   total_products: number
+  in_transit: number
+  in_warehouse_egypt: number
+  in_warehouse_germany: number
+  awaiting_shipment: number
 }
 
 export default function AdminDashboard() {
@@ -39,6 +43,10 @@ export default function AdminDashboard() {
         pending_shipments: shipments.filter((s: { status: string }) => s.status === 'submitted').length,
         total_sellers: sellers.filter((s: { status: string }) => s.status === 'approved').length,
         total_products: products.filter((p: { status: string }) => p.status === 'listed').length,
+        in_transit: products.filter((p: { status: string }) => p.status === 'in_transit').length,
+        in_warehouse_egypt: products.filter((p: { status: string }) => p.status === 'in_warehouse_egypt').length,
+        in_warehouse_germany: products.filter((p: { status: string }) => p.status === 'in_warehouse_germany').length,
+        awaiting_shipment: products.filter((p: { status: string }) => p.status === 'awaiting_seller_shipment').length,
       })
     }).finally(() => setLoading(false))
   }, [user, router])
@@ -53,6 +61,10 @@ export default function AdminDashboard() {
     { label: 'Pending Sellers', value: stats?.pending_sellers ?? 0, href: '/admin/sellers', urgent: true },
     { label: 'Pending Products', value: stats?.pending_products ?? 0, href: '/admin/products', urgent: true },
     { label: 'Pending Shipments', value: stats?.pending_shipments ?? 0, href: '/admin/shipments', urgent: true },
+    { label: 'Awaiting Shipment', value: stats?.awaiting_shipment ?? 0, href: '/admin/products', urgent: false },
+    { label: 'In Egypt Warehouse', value: stats?.in_warehouse_egypt ?? 0, href: '/admin/products', urgent: false },
+    { label: 'In Transit', value: stats?.in_transit ?? 0, href: '/admin/products', urgent: false },
+    { label: 'In Germany Warehouse', value: stats?.in_warehouse_germany ?? 0, href: '/admin/products', urgent: false },
     { label: 'Active Sellers', value: stats?.total_sellers ?? 0, href: '/admin/sellers', urgent: false },
     { label: 'Listed Products', value: stats?.total_products ?? 0, href: '/admin/products', urgent: false },
   ]

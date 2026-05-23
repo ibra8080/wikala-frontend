@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
+import Link from 'next/link'
 
 interface Product {
   id: number
@@ -21,11 +22,12 @@ const statusStyles: Record<string, string> = {
   pending_review: 'bg-amber-50 text-amber-700 border-amber-200',
   approved: 'bg-blue-50 text-blue-700 border-blue-200',
   rejected: 'bg-red-50 text-red-700 border-red-200',
-  awaiting_seller_shipment: 'bg-purple-50 text-purple-700',
-  in_warehouse_egypt: 'bg-orange-50 text-orange-700',
-  in_transit: 'bg-cyan-50 text-cyan-700',
-  in_warehouse_germany: 'bg-teal-50 text-teal-700',
-  listed: 'bg-green-50 text-green-700',
+  awaiting_seller_shipment: 'bg-purple-50 text-purple-700 border-purple-200',
+  in_warehouse_egypt: 'bg-orange-50 text-orange-700 border-orange-200',
+  in_transit: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  in_warehouse_germany: 'bg-teal-50 text-teal-700 border-teal-200',
+  listed: 'bg-green-50 text-green-700 border-green-200',
+  suspended: 'bg-gray-100 text-gray-500 border-gray-300',
 }
 
 const statusLabels: Record<string, string> = {
@@ -38,6 +40,7 @@ const statusLabels: Record<string, string> = {
   in_transit: 'In Transit',
   in_warehouse_germany: 'In Germany Warehouse',
   listed: 'Listed',
+  suspended: 'Suspended',
 }
 
 const tabs = [
@@ -45,6 +48,7 @@ const tabs = [
   { key: 'approved', label: 'Approved' },
   { key: 'rejected', label: 'Rejected' },
   { key: 'listed', label: 'Listed' },
+  { key: 'suspended', label: 'Suspended' },
   { key: 'all', label: 'All' },
 ]
 
@@ -99,6 +103,39 @@ export default function AdminProductsPage() {
     }
   }
 
+  const handleSuspend = async (productId: number) => {
+    if (!confirm('Are you sure you want to suspend this product?')) return
+    setActionLoading(productId)
+    try {
+      await api.patch(`/products/admin/${productId}/`, { status: 'suspended' })
+      await fetchProducts()
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleUnsuspend = async (product: Product) => {
+    const prevStatus = 'approved'
+    setActionLoading(product.id)
+    try {
+      await api.patch(`/products/admin/${product.id}/`, { status: prevStatus })
+      await fetchProducts()
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleDelete = async (productId: number) => {
+    if (!confirm('Are you sure you want to permanently delete this product?')) return
+    setActionLoading(productId)
+    try {
+      await api.delete(`/products/admin/${productId}/`)
+      await fetchProducts()
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const filtered = products.filter(p => filter === 'all' ? true : p.status === filter)
 
   if (loading) return (
@@ -117,15 +154,9 @@ export default function AdminProductsPage() {
       {/* Tabs */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setFilter(tab.key)}
+          <button key={tab.key} onClick={() => setFilter(tab.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition
-              ${filter === tab.key
-                ? 'bg-[#1B2A4A] text-white'
-                : 'bg-[#F5F4F0] text-[#6B6560] hover:bg-[#EEECEA]'
-              }`}
-          >
+              ${filter === tab.key ? 'bg-[#1B2A4A] text-white' : 'bg-[#F5F4F0] text-[#6B6560] hover:bg-[#EEECEA]'}`}>
             {tab.label}
             <span className="ml-2 text-xs opacity-70">
               {tab.key === 'all' ? products.length : products.filter(p => p.status === tab.key).length}
@@ -172,48 +203,73 @@ export default function AdminProductsPage() {
                     </p>
                   </td>
                   <td className="px-6 py-4">
-                    {product.status === 'pending_review' && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleApprove(product.id)}
+                    <div className="flex gap-2 flex-wrap justify-end">
+                      {/* View */}
+                      <Link href={`/admin/products/${product.id}`}
+                        className="text-xs text-[#1B2A4A] border border-[#E0DDDA] px-3 py-1.5 rounded-lg hover:border-[#1B2A4A] transition">
+                        View
+                      </Link>
+
+                      {/* Approve/Reject */}
+                      {product.status === 'pending_review' && (
+                        <>
+                          <button onClick={() => handleApprove(product.id)}
+                            disabled={actionLoading === product.id}
+                            className="bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-100 transition disabled:opacity-50">
+                            Approve
+                          </button>
+                          <button onClick={() => setRejectingId(product.id)}
+                            disabled={actionLoading === product.id}
+                            className="bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-100 transition disabled:opacity-50">
+                            Reject
+                          </button>
+                        </>
+                      )}
+
+                      {/* Suspend */}
+                      {!['draft', 'rejected', 'suspended', 'pending_review'].includes(product.status) && (
+                        <button onClick={() => handleSuspend(product.id)}
                           disabled={actionLoading === product.id}
-                          className="bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-100 transition disabled:opacity-50"
-                        >
-                          Approve
+                          className="bg-gray-50 text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-100 transition disabled:opacity-50">
+                          Suspend
                         </button>
-                        <button
-                          onClick={() => setRejectingId(product.id)}
+                      )}
+
+                      {/* Unsuspend */}
+                      {product.status === 'suspended' && (
+                        <button onClick={() => handleUnsuspend(product)}
                           disabled={actionLoading === product.id}
-                          className="bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-100 transition disabled:opacity-50"
-                        >
-                          Reject
+                          className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-100 transition disabled:opacity-50">
+                          Reactivate
                         </button>
-                      </div>
-                    )}
+                      )}
+
+                      {/* Delete */}
+                      <button onClick={() => handleDelete(product.id)}
+                        disabled={actionLoading === product.id}
+                        className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-100 transition disabled:opacity-50">
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
+
+                {/* Reject Form */}
                 {rejectingId === product.id && (
                   <tr key={`reject-${product.id}`} className="bg-red-50 border-b border-[#E0DDDA]">
                     <td colSpan={6} className="px-6 py-4">
                       <div className="flex gap-3 items-center">
-                        <input
-                          type="text"
-                          value={rejectReason}
+                        <input type="text" value={rejectReason}
                           onChange={e => setRejectReason(e.target.value)}
                           placeholder="Reason for rejection..."
-                          className="flex-1 border border-red-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-red-400"
-                        />
-                        <button
-                          onClick={() => handleReject(product.id)}
+                          className="flex-1 border border-red-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-red-400" />
+                        <button onClick={() => handleReject(product.id)}
                           disabled={!rejectReason.trim() || actionLoading === product.id}
-                          className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition"
-                        >
+                          className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition">
                           Confirm Reject
                         </button>
-                        <button
-                          onClick={() => { setRejectingId(null); setRejectReason('') }}
-                          className="text-sm text-[#6B6560] hover:text-[#1B2A4A]"
-                        >
+                        <button onClick={() => { setRejectingId(null); setRejectReason('') }}
+                          className="text-sm text-[#6B6560] hover:text-[#1B2A4A]">
                           Cancel
                         </button>
                       </div>
