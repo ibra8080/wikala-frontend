@@ -9,6 +9,7 @@ const adminLinks = [
   { label: 'Products', href: '/admin/products' },
   { label: 'Warehouses', href: '/admin/warehouses' },
   { label: 'Shipment Requests', href: '/admin/shipments' },
+  { label: 'Messages',          href: '/admin/messages' },
   { label: 'Statements', href: '/admin/statements' },
 ]
 
