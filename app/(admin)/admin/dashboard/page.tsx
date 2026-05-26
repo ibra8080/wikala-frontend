@@ -6,6 +6,16 @@ import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 import Link from 'next/link'
 
+interface Conversation {
+  id: number; subject: string; seller: number
+  seller_name?: string
+  messages: { sender: number; is_read: boolean }[]
+}
+
+interface Issue {
+  id: number; issue_number: string; title: string; status: string
+}
+
 interface Stats {
   pending_sellers: number
   pending_products: number
@@ -22,6 +32,8 @@ export default function AdminDashboard() {
   const router = useRouter()
   const { user } = useAuthStore()
   const [stats, setStats] = useState<Stats | null>(null)
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [issues, setIssues]               = useState<Issue[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -32,10 +44,15 @@ export default function AdminDashboard() {
       api.get('/sellers/admin/list/'),
       api.get('/products/admin/list/'),
       api.get('/inventory/admin/shipment-requests/'),
-    ]).then(([sellersRes, productsRes, shipmentsRes]) => {
+      api.get('/communication/conversations/'),
+      api.get('/communication/issues/'),
+    ]).then(([sellersRes, productsRes, shipmentsRes, convsRes, issuesRes]) => {
       const sellers = sellersRes.data
       const products = productsRes.data
       const shipments = shipmentsRes.data
+
+      setConversations(convsRes.data)
+      setIssues(issuesRes.data)
 
       setStats({
         pending_sellers: sellers.filter((s: { status: string }) => s.status === 'pending').length,
@@ -69,6 +86,14 @@ export default function AdminDashboard() {
     { label: 'Listed Products', value: stats?.total_products ?? 0, href: '/admin/products', urgent: false },
   ]
 
+  const adminId      = user?.id ?? -1
+  const unreadConvs  = conversations.filter(c =>
+    c.messages?.some(m => m.sender !== adminId && !m.is_read)
+  )
+  const activeIssues     = issues.filter(i => i.status === 'open' || i.status === 'in_progress')
+  const firstUnreadConv  = unreadConvs[0]
+  const firstActiveIssue = activeIssues[0]
+
   return (
     <div>
       <div className="mb-8">
@@ -93,6 +118,44 @@ export default function AdminDashboard() {
             </p>
           </Link>
         ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <Link href="/admin/messages?tab=conversations"
+          className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className={`text-2xl font-bold ${unreadConvs.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
+                {unreadConvs.length}
+              </span>
+              {unreadConvs.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
+              )}
+            </div>
+            <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
+          </div>
+          <p className="text-sm font-semibold text-[#1B2A4A]">
+            {unreadConvs.length > 0 ? 'Unread Messages' : 'No new messages'}
+          </p>
+        </Link>
+
+        <Link href="/admin/messages?tab=issues"
+          className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className={`text-2xl font-bold ${activeIssues.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
+                {activeIssues.length}
+              </span>
+              {activeIssues.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
+              )}
+            </div>
+            <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
+          </div>
+          <p className="text-sm font-semibold text-[#1B2A4A]">
+            {activeIssues.length > 0 ? 'Open Support Tickets' : 'No open tickets'}
+          </p>
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-6">

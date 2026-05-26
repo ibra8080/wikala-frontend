@@ -4,6 +4,16 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
+import Link from 'next/link'
+
+interface Conversation {
+  id: number; subject: string
+  messages: { sender: number; is_read: boolean }[]
+}
+
+interface Issue {
+  id: number; issue_number: string; title: string; status: string
+}
 
 interface Profile {
   full_name: string
@@ -16,14 +26,22 @@ export default function SellerDashboard() {
   const router = useRouter()
   const { user } = useAuthStore()
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [issues, setIssues]               = useState<Issue[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) { router.push('/login'); return }
     if (user.role !== 'seller') { router.push('/admin/dashboard'); return }
-    api.get('/sellers/profile/')
-      .then(res => setProfile(res.data))
-      .finally(() => setLoading(false))
+    Promise.all([
+      api.get('/sellers/profile/'),
+      api.get('/communication/conversations/'),
+      api.get('/communication/issues/'),
+    ]).then(([profileRes, convsRes, issuesRes]) => {
+      setProfile(profileRes.data)
+      setConversations(convsRes.data)
+      setIssues(issuesRes.data)
+    }).finally(() => setLoading(false))
   }, [user])
 
   if (loading) return (
@@ -40,6 +58,14 @@ export default function SellerDashboard() {
   }
 
   const status = statusMap[profile?.status ?? 'pending'] ?? statusMap.pending
+
+  const sellerId     = user?.id ?? -1
+  const unreadConvs  = conversations.filter(c =>
+    c.messages?.some(m => m.sender !== sellerId && !m.is_read)
+  )
+  const activeIssues     = issues.filter(i => i.status === 'open' || i.status === 'in_progress')
+  const firstUnreadConv  = unreadConvs[0]
+  const firstActiveIssue = activeIssues[0]
 
   return (
     <div>
@@ -77,6 +103,46 @@ export default function SellerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Notifications */}
+      {(unreadConvs.length > 0 || activeIssues.length > 0) && (
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {unreadConvs.length > 0 && (
+            <Link href="/messages"
+              className="bg-white rounded-2xl border border-[#C8952E] p-5 hover:bg-[#FFF8EE] transition group">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-[#C8952E]">{unreadConvs.length}</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
+                </div>
+                <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
+              </div>
+              <p className="text-sm font-semibold text-[#1B2A4A]">New Messages from Wikala</p>
+              {firstUnreadConv && (
+                <p className="text-xs text-[#6B6560] mt-1 truncate">{firstUnreadConv.subject}</p>
+              )}
+            </Link>
+          )}
+          {activeIssues.length > 0 && (
+            <Link href="/messages"
+              className="bg-white rounded-2xl border border-[#C8952E] p-5 hover:bg-[#FFF8EE] transition group">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-[#C8952E]">{activeIssues.length}</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
+                </div>
+                <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
+              </div>
+              <p className="text-sm font-semibold text-[#1B2A4A]">Open Support Tickets</p>
+              {firstActiveIssue && (
+                <p className="text-xs text-[#6B6560] mt-1 truncate">
+                  {firstActiveIssue.issue_number} · {firstActiveIssue.title}
+                </p>
+              )}
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
       {profile?.status === 'approved' && (

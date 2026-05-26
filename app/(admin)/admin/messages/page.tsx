@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 
@@ -70,13 +70,21 @@ const categoryLabels: Record<string, string> = {
   other:    'Other',
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function unreadCount(conv: Conversation, adminId: number): number {
+  return conv.messages?.filter(m => m.sender !== adminId && !m.is_read).length ?? 0
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdminMessagesPage() {
   const router = useRouter()
   const { user } = useAuthStore()
+  const searchParams = useSearchParams()
+  const initialTab = (searchParams.get('tab') as 'conversations' | 'issues') ?? 'conversations'
 
-  const [activeTab, setActiveTab]           = useState<'conversations' | 'issues'>('conversations')
+  const [activeTab, setActiveTab]           = useState<'conversations' | 'issues'>(initialTab)
   const [conversations, setConversations]   = useState<Conversation[]>([])
   const [issues, setIssues]                 = useState<Issue[]>([])
   const [loading, setLoading]               = useState(true)
@@ -86,7 +94,8 @@ export default function AdminMessagesPage() {
   const [sending, setSending]               = useState(false)
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [issueFilter, setIssueFilter]       = useState<string>('open')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const selectedConvRef  = useRef<HTMLButtonElement | null>(null)
+  const selectedIssueRef = useRef<HTMLButtonElement | null>(null)
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -110,8 +119,12 @@ export default function AdminMessagesPage() {
   }, [user, router, fetchAll])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [selectedConv?.messages, selectedIssue?.messages])
+    selectedConvRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedConv?.id])
+
+  useEffect(() => {
+    selectedIssueRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedIssue?.id])
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -150,6 +163,8 @@ export default function AdminMessagesPage() {
   const selectConv = async (conv: Conversation) => {
     const res = await api.get(`/communication/conversations/${conv.id}/`)
     setSelectedConv(res.data)
+    await api.post(`/communication/conversations/${conv.id}/read/`)
+    await fetchAll()
   }
 
   const selectIssue = async (issue: Issue) => {
@@ -216,28 +231,41 @@ export default function AdminMessagesPage() {
             <div className="flex-1 overflow-y-auto divide-y divide-[#E0DDDA]">
               {conversations.length === 0 ? (
                 <div className="p-8 text-center text-sm text-[#6B6560]">No conversations yet.</div>
-              ) : conversations.map(conv => (
-                <button
-                  key={conv.id}
-                  onClick={() => selectConv(conv)}
-                  className={`w-full text-left px-4 py-3 hover:bg-[#F5F4F0] transition
-                    ${selectedConv?.id === conv.id ? 'bg-[#EEECEA]' : ''}`}
-                >
-                  {/* Seller badge */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#1B2A4A]/8 text-[#1B2A4A]">
-                      {conv.seller_name ?? `Seller #${conv.seller}`}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium text-[#1B2A4A] truncate">{conv.subject}</p>
-                  <p className="text-xs text-[#6B6560] mt-0.5">
-                    {new Date(conv.created_at).toLocaleDateString('en-GB')}
-                    {conv.messages?.length > 0 && (
-                      <span className="ml-2 text-[#C8952E]">{conv.messages.length} msg</span>
+              ) : conversations.map(conv => {
+                const unread = unreadCount(conv, user?.id ?? -1)
+                return (
+                  <button
+                    key={conv.id}
+                    ref={selectedConv?.id === conv.id ? selectedConvRef : null}
+                    onClick={() => selectConv(conv)}
+                    className={`w-full text-left px-4 py-3 hover:bg-[#F5F4F0] transition relative
+                      ${selectedConv?.id === conv.id ? 'bg-[#EEECEA]' : ''}
+                      ${unread > 0 && selectedConv?.id !== conv.id ? 'bg-[#FFF8EE]' : ''}`}
+                  >
+                    {unread > 0 && (
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#C8952E]" />
                     )}
-                  </p>
-                </button>
-              ))}
+                    {/* Seller badge */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-[#1B2A4A]/8 text-[#1B2A4A]">
+                        {conv.seller_name ?? `Seller #${conv.seller}`}
+                      </span>
+                      {unread > 0 && (
+                        <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#C8952E] text-white text-[10px] font-bold">
+                          {unread}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm font-medium text-[#1B2A4A] truncate">{conv.subject}</p>
+                    <p className="text-xs text-[#6B6560] mt-0.5">
+                      {new Date(conv.created_at).toLocaleDateString('en-GB')}
+                      {conv.messages?.length > 0 && (
+                        <span className="ml-2 text-[#C8952E]">{conv.messages.length} msg</span>
+                      )}
+                    </p>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -287,7 +315,6 @@ export default function AdminMessagesPage() {
                       </div>
                     )
                   })}
-                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input */}
@@ -354,6 +381,7 @@ export default function AdminMessagesPage() {
                 ) : filteredIssues.map(issue => (
                   <button
                     key={issue.id}
+                    ref={selectedIssue?.id === issue.id ? selectedIssueRef : null}
                     onClick={() => selectIssue(issue)}
                     className={`w-full text-left px-4 py-3 hover:bg-[#F5F4F0] transition
                       ${selectedIssue?.id === issue.id ? 'bg-[#EEECEA]' : ''}`}
@@ -453,7 +481,6 @@ export default function AdminMessagesPage() {
                         </div>
                       )
                     })}
-                    <div ref={messagesEndRef} />
                   </div>
 
                   {/* Input — disabled if closed */}
