@@ -64,9 +64,6 @@ export default function SellerDashboard() {
     c.messages?.some(m => m.sender !== sellerId && !m.is_read)
   )
   const activeIssues     = issues.filter(i => i.status === 'open' || i.status === 'in_progress')
-  const firstUnreadConv  = unreadConvs[0]
-  const firstActiveIssue = activeIssues[0]
-
   return (
     <div>
       {/* Header */}
@@ -105,44 +102,43 @@ export default function SellerDashboard() {
       </div>
 
       {/* Notifications */}
-      {(unreadConvs.length > 0 || activeIssues.length > 0) && (
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          {unreadConvs.length > 0 && (
-            <Link href="/messages"
-              className="bg-white rounded-2xl border border-[#C8952E] p-5 hover:bg-[#FFF8EE] transition group">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-[#C8952E]">{unreadConvs.length}</span>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
-                </div>
-                <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
-              </div>
-              <p className="text-sm font-semibold text-[#1B2A4A]">New Messages from Wikala</p>
-              {firstUnreadConv && (
-                <p className="text-xs text-[#6B6560] mt-1 truncate">{firstUnreadConv.subject}</p>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <Link href="/messages"
+          className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className={`text-2xl font-bold ${unreadConvs.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
+                {unreadConvs.length}
+              </span>
+              {unreadConvs.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
               )}
-            </Link>
-          )}
-          {activeIssues.length > 0 && (
-            <Link href="/messages"
-              className="bg-white rounded-2xl border border-[#C8952E] p-5 hover:bg-[#FFF8EE] transition group">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-[#C8952E]">{activeIssues.length}</span>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
-                </div>
-                <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
-              </div>
-              <p className="text-sm font-semibold text-[#1B2A4A]">Open Support Tickets</p>
-              {firstActiveIssue && (
-                <p className="text-xs text-[#6B6560] mt-1 truncate">
-                  {firstActiveIssue.issue_number} · {firstActiveIssue.title}
-                </p>
+            </div>
+            <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
+          </div>
+          <p className="text-sm font-semibold text-[#1B2A4A]">
+            {unreadConvs.length > 0 ? 'New Messages from Wikala' : 'No new messages'}
+          </p>
+        </Link>
+
+        <Link href="/messages"
+          className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className={`text-2xl font-bold ${activeIssues.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
+                {activeIssues.length}
+              </span>
+              {activeIssues.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
               )}
-            </Link>
-          )}
-        </div>
-      )}
+            </div>
+            <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
+          </div>
+          <p className="text-sm font-semibold text-[#1B2A4A]">
+            {activeIssues.length > 0 ? 'Open Support Tickets' : 'No open tickets'}
+          </p>
+        </Link>
+      </div>
 
       {/* Stats */}
       {profile?.status === 'approved' && (

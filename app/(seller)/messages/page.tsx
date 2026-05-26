@@ -54,6 +54,10 @@ const statusStyles: Record<string, string> = {
   closed: 'bg-gray-100 text-gray-500',
 }
 
+function unreadCount(conv: Conversation, sellerId: number): number {
+  return conv.messages?.filter(m => m.sender !== sellerId && !m.is_read).length ?? 0
+}
+
 export default function MessagesPage() {
   const router = useRouter()
   const { user } = useAuthStore()
@@ -71,7 +75,8 @@ export default function MessagesPage() {
   const [newIssue, setNewIssue] = useState({
     title: '', description: '', category: 'other', priority: 'medium'
   })
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const selectedConvRef  = useRef<HTMLButtonElement | null>(null)
+  const selectedIssueRef = useRef<HTMLButtonElement | null>(null)
 
   const fetchAll = useCallback(async () => {
     try {
@@ -86,14 +91,25 @@ export default function MessagesPage() {
     }
   }, [])
 
+  const selectConv = useCallback(async (conv: Conversation) => {
+    const res = await api.get(`/communication/conversations/${conv.id}/`)
+    setSelectedConv(res.data)
+    await api.post(`/communication/conversations/${conv.id}/read/`)
+    await fetchAll()
+  }, [fetchAll])
+
   useEffect(() => {
     if (!user) { router.push('/login'); return }
     void fetchAll()
   }, [user, router, fetchAll])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [selectedConv, selectedIssue])
+    selectedConvRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedConv?.id])
+
+  useEffect(() => {
+    selectedIssueRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedIssue?.id])
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return
@@ -213,16 +229,28 @@ export default function MessagesPage() {
                   <p className="text-sm text-[#6B6560]">No conversations yet</p>
                 </div>
               ) : (
-                conversations.map(conv => (
-                  <button key={conv.id} onClick={() => setSelectedConv(conv)}
-                    className={`w-full text-left px-4 py-3 border-b border-[#E0DDDA] hover:bg-[#F5F4F0] transition
-                      ${selectedConv?.id === conv.id ? 'bg-[#EEECEA]' : ''}`}>
-                    <p className="text-sm font-medium text-[#1B2A4A] truncate">{conv.subject}</p>
-                    <p className="text-xs text-[#6B6560] mt-0.5">
-                      {new Date(conv.created_at).toLocaleDateString('en-GB')}
-                    </p>
-                  </button>
-                ))
+                conversations.map(conv => {
+                  const unread = unreadCount(conv, user?.id ?? -1)
+                  return (
+                    <button
+                      key={conv.id}
+                      ref={selectedConv?.id === conv.id ? selectedConvRef : null}
+                      onClick={() => selectConv(conv)}
+                      className={`w-full text-left px-4 py-3 border-b border-[#E0DDDA] hover:bg-[#F5F4F0] transition relative
+                        ${selectedConv?.id === conv.id ? 'bg-[#EEECEA]' : ''}
+                        ${unread > 0 && selectedConv?.id !== conv.id ? 'bg-[#FFF8EE]' : ''}`}>
+                      <p className="text-sm font-medium text-[#1B2A4A] truncate">{conv.subject}</p>
+                      <p className="text-xs text-[#6B6560] mt-0.5">
+                        {new Date(conv.created_at).toLocaleDateString('en-GB')}
+                      </p>
+                      {unread > 0 && (
+                        <span className="absolute right-3 top-3 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#C8952E] text-white text-[10px] font-bold">
+                          {unread}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })
               )}
             </div>
           </div>
@@ -252,7 +280,6 @@ export default function MessagesPage() {
                       </div>
                     </div>
                   ))}
-                  <div ref={messagesEndRef} />
                 </div>
                 <div className="p-4 border-t border-[#E0DDDA] flex gap-2">
                   <input value={newMessage} onChange={e => setNewMessage(e.target.value)}
@@ -328,7 +355,10 @@ export default function MessagesPage() {
                 </div>
               ) : (
                 issues.map(issue => (
-                  <button key={issue.id} onClick={() => setSelectedIssue(issue)}
+                  <button
+                      key={issue.id}
+                      ref={selectedIssue?.id === issue.id ? selectedIssueRef : null}
+                      onClick={() => setSelectedIssue(issue)}
                     className={`w-full text-left px-4 py-3 border-b border-[#E0DDDA] hover:bg-[#F5F4F0] transition
                       ${selectedIssue?.id === issue.id ? 'bg-[#EEECEA]' : ''}`}>
                     <div className="flex items-center gap-2 mb-1">
@@ -382,7 +412,6 @@ export default function MessagesPage() {
                       </div>
                     </div>
                   ))}
-                  <div ref={messagesEndRef} />
                 </div>
                 <div className="p-4 border-t border-[#E0DDDA] flex gap-2">
                   <input value={newMessage} onChange={e => setNewMessage(e.target.value)}
