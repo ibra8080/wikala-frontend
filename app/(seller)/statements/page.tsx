@@ -68,7 +68,9 @@ export default function StatementsPage() {
       ])
       setProducts(prodRes.data)
       setInventory(invRes.data)
-      setStatements(stmtRes.data)
+      setStatements(stmtRes.data.filter(
+        (s: { status: string }) => s.status === 'sent' || s.status === 'paid'
+      ))
     } finally {
       setLoading(false)
     }
