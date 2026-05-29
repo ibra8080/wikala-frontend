@@ -304,9 +304,11 @@ export default function InventoryPage() {
                         ⚠️ Issue Reported by Wikala
                       </p>
                       <p className="text-sm text-red-700">{req.issue_note}</p>
-                      <p className="text-xs text-red-500 mt-2">
-                        Please contact Wikala via Messages to resolve this issue.
-                      </p>
+                      <Link
+                        href={`/messages?tab=issues&new=true&title=Issue with ${req.request_number}&description=${encodeURIComponent(`Regarding shipment ${req.request_number}: ${req.issue_note}`)}`}
+                        className="text-xs text-red-700 font-semibold hover:underline mt-2 inline-block">
+                        Contact Wikala to resolve this issue →
+                      </Link>
                     </div>
                   )}
                 </div>

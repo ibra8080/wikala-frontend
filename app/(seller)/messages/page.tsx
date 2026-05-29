@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 
@@ -61,6 +61,7 @@ function unreadCount(conv: Conversation, sellerId: number): number {
 export default function MessagesPage() {
   const router = useRouter()
   const { user } = useAuthStore()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<'conversations' | 'issues'>('conversations')
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [issues, setIssues] = useState<Issue[]>([])
@@ -102,6 +103,20 @@ export default function MessagesPage() {
     if (!user) { router.push('/login'); return }
     void fetchAll()
   }, [user, router, fetchAll])
+
+  useEffect(() => {
+    const tab = searchParams.get('tab') as 'conversations' | 'issues' | null
+    const isNew = searchParams.get('new')
+    const title = searchParams.get('title')
+    const description = searchParams.get('description')
+
+    if (tab) setActiveTab(tab)
+    if (isNew === 'true') {
+      setShowNewIssue(true)
+      if (title) setNewIssue(p => ({ ...p, title, category: 'shipping' }))
+      if (description) setNewIssue(p => ({ ...p, description: decodeURIComponent(description) }))
+    }
+  }, [searchParams])
 
   useEffect(() => {
     selectedConvRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
