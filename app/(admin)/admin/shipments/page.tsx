@@ -35,6 +35,8 @@ interface ShipmentRequest {
   delivery_address: string
   contact_person: string
   contact_number: string
+  execution_status: string
+  issue_note: string
   items: ShipmentItem[]
 }
 
@@ -68,6 +70,10 @@ export default function AdminShipmentsPage() {
     delivery_notes: '',
   })
 
+  const [executionForm, setExecutionForm] = useState<{
+    id: number; status: string; note: string
+  } | null>(null)
+
   const fetchRequests = useCallback(async () => {
     try {
       const res = await api.get('/inventory/admin/shipment-requests/')
@@ -100,12 +106,33 @@ export default function AdminShipmentsPage() {
     }
   }
 
+  const handleExecutionUpdate = async () => {
+    if (!executionForm) return
+    setActionLoading(executionForm.id)
+    try {
+      await api.patch(`/inventory/admin/shipment-requests/${executionForm.id}/`, {
+        execution_status: executionForm.status,
+        issue_note: executionForm.note,
+      })
+      setExecutionForm(null)
+      await fetchRequests()
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const filtered = requests.filter(r => filter === 'all' ? true : r.status === filter)
 
   const deliveryMethodLabels: Record<string, string> = {
     pickup: 'Pickup by Wikala',
     courier: 'Courier',
     drop_off: 'Drop Off at Wikala',
+  }
+
+  const executionStyles: Record<string, string> = {
+    in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
+    completed:   'bg-green-50 text-green-700 border-green-200',
+    issue:       'bg-red-50 text-red-700 border-red-200',
   }
 
   if (loading) return (
@@ -256,24 +283,92 @@ export default function AdminShipmentsPage() {
                   </div>
                 )}
 
-                {/* Delivery info (if accepted) */}
+                {/* Delivery info + Execution Status (if accepted) */}
                 {req.status === 'accepted' && (
-                  <div className="px-6 pb-4 bg-green-50 border-t border-green-100">
-                    <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2 pt-3">Delivery Details</p>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-xs text-green-600">Date</p>
-                        <p className="text-sm font-medium text-green-800">{req.delivery_date}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-green-600">Method</p>
-                        <p className="text-sm font-medium text-green-800">{deliveryMethodLabels[req.delivery_method] ?? req.delivery_method}</p>
-                      </div>
-                      {req.delivery_notes && (
+                  <div className="border-t border-[#E0DDDA]">
+                    {/* Delivery Details */}
+                    <div className="px-6 py-4 bg-green-50">
+                      <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">Delivery Details</p>
+                      <div className="grid grid-cols-3 gap-4">
                         <div>
-                          <p className="text-xs text-green-600">Notes</p>
-                          <p className="text-sm font-medium text-green-800">{req.delivery_notes}</p>
+                          <p className="text-xs text-green-600">Date</p>
+                          <p className="text-sm font-medium text-green-800">{req.delivery_date}</p>
                         </div>
+                        <div>
+                          <p className="text-xs text-green-600">Method</p>
+                          <p className="text-sm font-medium text-green-800">{deliveryMethodLabels[req.delivery_method] ?? req.delivery_method}</p>
+                        </div>
+                        {req.delivery_notes && (
+                          <div>
+                            <p className="text-xs text-green-600">Notes</p>
+                            <p className="text-sm font-medium text-green-800">{req.delivery_notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Execution Status */}
+                    <div className="px-6 py-4 border-t border-[#E0DDDA]">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide">Execution Status</p>
+                        {req.execution_status && (
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${executionStyles[req.execution_status] ?? ''}`}>
+                            {req.execution_status.replace('_', ' ')}
+                          </span>
+                        )}
+                      </div>
+
+                      {req.issue_note && (
+                        <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">
+                          ⚠️ {req.issue_note}
+                        </p>
+                      )}
+
+                      {executionForm?.id === req.id ? (
+                        <div className="space-y-3">
+                          <div className="flex gap-3">
+                            {['in_progress', 'completed', 'issue'].map(s => (
+                              <button key={s}
+                                onClick={() => setExecutionForm(p => p ? ({ ...p, status: s }) : p)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition
+                                  ${executionForm.status === s
+                                    ? executionStyles[s]
+                                    : 'bg-white text-[#6B6560] border-[#E0DDDA] hover:bg-[#F5F4F0]'}`}>
+                                {s.replace('_', ' ')}
+                              </button>
+                            ))}
+                          </div>
+                          {executionForm.status === 'issue' && (
+                            <textarea
+                              value={executionForm.note}
+                              onChange={e => setExecutionForm(p => p ? ({ ...p, note: e.target.value }) : p)}
+                              placeholder="Describe the issue..."
+                              rows={2}
+                              className="w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A] resize-none"
+                            />
+                          )}
+                          <div className="flex gap-2">
+                            <button onClick={handleExecutionUpdate}
+                              disabled={actionLoading === req.id}
+                              className="bg-[#1B2A4A] text-white px-4 py-2 rounded-lg text-xs font-medium hover:bg-[#243860] disabled:opacity-50 transition">
+                              {actionLoading === req.id ? 'Saving...' : 'Save'}
+                            </button>
+                            <button onClick={() => setExecutionForm(null)}
+                              className="text-xs text-[#6B6560] px-4 py-2">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setExecutionForm({
+                            id: req.id,
+                            status: req.execution_status || 'in_progress',
+                            note: req.issue_note || ''
+                          })}
+                          className="text-xs text-[#C8952E] hover:underline">
+                          {req.execution_status ? 'Update Status' : 'Set Execution Status'} →
+                        </button>
                       )}
                     </div>
                   </div>
