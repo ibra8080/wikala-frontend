@@ -16,6 +16,8 @@ interface ShipmentRequest {
   delivery_method: string
   delivery_notes: string
   created_at: string
+  execution_status: string
+  issue_note: string
   items: ShipmentItem[]
 }
 
@@ -204,6 +206,11 @@ export default function InventoryPage() {
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusStyles[req.status] ?? ''}`}>
                     {statusLabels[req.status] ?? req.status}
                   </span>
+                  {req.execution_status === 'issue' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                      ⚠️ Issue
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-[#6B6560]">{req.items.length} products</span>
@@ -288,6 +295,18 @@ export default function InventoryPage() {
                           </div>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {req.execution_status === 'issue' && req.issue_note && (
+                    <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+                      <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">
+                        ⚠️ Issue Reported by Wikala
+                      </p>
+                      <p className="text-sm text-red-700">{req.issue_note}</p>
+                      <p className="text-xs text-red-500 mt-2">
+                        Please contact Wikala via Messages to resolve this issue.
+                      </p>
                     </div>
                   )}
                 </div>

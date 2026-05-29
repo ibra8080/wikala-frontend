@@ -35,6 +35,7 @@ export default function SellerDashboard() {
   const [productCount, setProductCount]   = useState(0)
   const [germanyCount, setGermanyCount]   = useState(0)
   const [totalSales, setTotalSales]       = useState('€0')
+  const [shipmentIssues, setShipmentIssues] = useState<{ id: number; request_number: string; issue_note: string }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -47,10 +48,15 @@ export default function SellerDashboard() {
       api.get('/products/'),
       api.get('/inventory/'),
       api.get('/finance/statements/'),
-    ]).then(([profileRes, convsRes, issuesRes, prodsRes, invRes, stmtRes]) => {
+      api.get('/inventory/shipment-requests/'),
+    ]).then(([profileRes, convsRes, issuesRes, prodsRes, invRes, stmtRes, shipmentsRes]) => {
       setProfile(profileRes.data)
       setConversations(convsRes.data)
       setIssues(issuesRes.data)
+
+      const shipIssues = (shipmentsRes.data as { id: number; request_number: string; execution_status: string; issue_note: string }[])
+        .filter(s => s.execution_status === 'issue')
+      setShipmentIssues(shipIssues)
 
       setProductCount(prodsRes.data.length)
       setGermanyCount(
@@ -119,6 +125,23 @@ export default function SellerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Shipment Issues */}
+      {shipmentIssues.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6">
+          <p className="text-sm font-semibold text-red-700 mb-2">
+            ⚠️ {shipmentIssues.length} Shipment Issue{shipmentIssues.length > 1 ? 's' : ''} Require Your Attention
+          </p>
+          {shipmentIssues.map(s => (
+            <div key={s.id} className="text-xs text-red-600 mb-1">
+              <span className="font-mono">{s.request_number}</span> — {s.issue_note}
+            </div>
+          ))}
+          <Link href="/inventory" className="text-xs text-red-700 font-semibold hover:underline mt-2 inline-block">
+            View Shipments →
+          </Link>
+        </div>
+      )}
 
       {/* Notifications */}
       <div className="grid grid-cols-2 gap-4 mb-6">
