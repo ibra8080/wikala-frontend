@@ -22,12 +22,19 @@ interface Profile {
   status: string
 }
 
+interface InventoryItem {
+  quantity_in_germany: number
+}
+
 export default function SellerDashboard() {
   const router = useRouter()
   const { user } = useAuthStore()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [issues, setIssues]               = useState<Issue[]>([])
+  const [productCount, setProductCount]   = useState(0)
+  const [germanyCount, setGermanyCount]   = useState(0)
+  const [totalSales, setTotalSales]       = useState('€0')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -37,10 +44,22 @@ export default function SellerDashboard() {
       api.get('/sellers/profile/'),
       api.get('/communication/conversations/'),
       api.get('/communication/issues/'),
-    ]).then(([profileRes, convsRes, issuesRes]) => {
+      api.get('/products/'),
+      api.get('/inventory/'),
+      api.get('/finance/statements/'),
+    ]).then(([profileRes, convsRes, issuesRes, prodsRes, invRes, stmtRes]) => {
       setProfile(profileRes.data)
       setConversations(convsRes.data)
       setIssues(issuesRes.data)
+
+      setProductCount(prodsRes.data.length)
+      setGermanyCount(
+        (invRes.data as InventoryItem[]).filter(i => i.quantity_in_germany > 0).length
+      )
+      const totalNet = (stmtRes.data as { status: string; net_amount: string }[])
+        .filter(s => s.status === 'paid')
+        .reduce((sum, s) => sum + parseFloat(s.net_amount), 0)
+      setTotalSales(`€${totalNet.toFixed(2)}`)
     }).finally(() => setLoading(false))
   }, [user])
 
@@ -144,9 +163,9 @@ export default function SellerDashboard() {
       {profile?.status === 'approved' && (
         <div className="grid grid-cols-3 gap-4 mb-6">
           {[
-            { label: 'Products', value: '0', href: '/products' },
-            { label: 'Total Sales', value: '€0', href: '/statements' },
-            { label: 'Inventory', value: '0', href: '/inventory' },
+            { label: 'Products',    value: String(productCount), href: '/products' },
+            { label: 'Total Sales', value: totalSales,            href: '/statements' },
+            { label: 'Inventory',   value: String(germanyCount),  href: '/inventory' },
           ].map((stat) => (
             <a
               key={stat.label}
