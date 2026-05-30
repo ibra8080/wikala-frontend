@@ -36,6 +36,24 @@ interface Statement {
   created_at: string
 }
 
+interface WebServiceCharge {
+  id: number
+  service_name: string
+  original_price: string
+  discount_amount: string
+  final_price: string
+  status: string
+  period_month: number | null
+  period_year: number | null
+  created_at: string
+}
+
+interface SellerDiscountCode {
+  id: number
+  code: { code: string; name: string; discount_type: string; value: string; applies_to: string }
+  applied_at: string
+}
+
 interface SkuRow {
   sku: string
   product_name: string
@@ -56,25 +74,51 @@ export default function StatementsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [statements, setStatements] = useState<Statement[]>([])
+  const [charges, setCharges] = useState<WebServiceCharge[]>([])
+  const [myCodes, setMyCodes] = useState<SellerDiscountCode[]>([])
+  const [codeInput, setCodeInput] = useState('')
+  const [codeLoading, setCodeLoading] = useState(false)
+  const [codeMessage, setCodeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'statements'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'statements' | 'services'>('overview')
 
   const fetchAll = useCallback(async () => {
     try {
-      const [prodRes, invRes, stmtRes] = await Promise.all([
+      const [prodRes, invRes, stmtRes, chargesRes, codesRes] = await Promise.all([
         api.get('/products/'),
         api.get('/inventory/'),
         api.get('/finance/statements/'),
+        api.get('/finance/charges/'),
+        api.get('/finance/codes/'),
       ])
       setProducts(prodRes.data)
       setInventory(invRes.data)
       setStatements(stmtRes.data.filter(
         (s: { status: string }) => s.status === 'sent' || s.status === 'paid'
       ))
+      setCharges(chargesRes.data)
+      setMyCodes(codesRes.data)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const handleApplyCode = async () => {
+    if (!codeInput.trim()) return
+    setCodeLoading(true)
+    setCodeMessage(null)
+    try {
+      await api.post('/finance/codes/apply/', { code: codeInput.trim().toUpperCase() })
+      setCodeMessage({ type: 'success', text: 'Code applied successfully!' })
+      setCodeInput('')
+      await fetchAll()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } }
+      setCodeMessage({ type: 'error', text: error.response?.data?.error ?? 'Invalid code' })
+    } finally {
+      setCodeLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!user) { router.push('/login'); return }
@@ -160,6 +204,16 @@ export default function StatementsPage() {
             ${activeTab === 'statements' ? 'bg-[#1B2A4A] text-white' : 'bg-[#F5F4F0] text-[#6B6560] hover:bg-[#EEECEA]'}`}>
           Monthly Statements
           <span className="ml-2 text-xs opacity-70">{statements.length}</span>
+        </button>
+        <button onClick={() => setActiveTab('services')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition
+            ${activeTab === 'services' ? 'bg-[#1B2A4A] text-white' : 'bg-[#F5F4F0] text-[#6B6560] hover:bg-[#EEECEA]'}`}>
+          Web Services
+          {charges.filter(c => c.status === 'pending').length > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#C8952E] text-white text-[10px] font-bold">
+              {charges.filter(c => c.status === 'pending').length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -284,6 +338,110 @@ export default function StatementsPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tab: Web Services */}
+      {activeTab === 'services' && (
+        <div className="space-y-6">
+
+          {/* Apply Code */}
+          <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
+            <h2 className="font-semibold text-[#1B2A4A] mb-1">Discount Code</h2>
+            <p className="text-xs text-[#6B6560] mb-4">Enter a discount code to apply it to your account.</p>
+            <div className="flex gap-3">
+              <input
+                value={codeInput}
+                onChange={e => setCodeInput(e.target.value.toUpperCase())}
+                onKeyDown={e => e.key === 'Enter' && handleApplyCode()}
+                placeholder="Enter code..."
+                className="flex-1 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-[#1B2A4A] transition"
+              />
+              <button
+                onClick={handleApplyCode}
+                disabled={codeLoading || !codeInput.trim()}
+                className="bg-[#C8952E] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-50 transition">
+                {codeLoading ? 'Applying...' : 'Apply'}
+              </button>
+            </div>
+            {codeMessage && (
+              <p className={`text-xs mt-2 font-medium ${codeMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                {codeMessage.type === 'success' ? '✓' : '✗'} {codeMessage.text}
+              </p>
+            )}
+
+            {/* Active Codes */}
+            {myCodes.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-[#E0DDDA]">
+                <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Applied Codes</p>
+                <div className="space-y-2">
+                  {myCodes.map(usage => (
+                    <div key={usage.id} className="flex items-center justify-between bg-[#F5F4F0] rounded-lg px-4 py-2.5">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-semibold text-[#1B2A4A] text-sm">{usage.code.code}</span>
+                        <span className="text-xs text-[#6B6560]">{usage.code.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-green-600">
+                          {usage.code.discount_type === 'percent'
+                            ? `${usage.code.value}% off`
+                            : `€${usage.code.value} off`}
+                        </span>
+                        <span className="text-xs text-[#6B6560]">
+                          {usage.code.applies_to === 'all' ? 'All services' : 'Specific service'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Charges */}
+          <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
+            <div className="px-6 py-4 border-b border-[#E0DDDA] bg-[#F5F4F0]">
+              <p className="text-sm font-semibold text-[#1B2A4A]">Service Charges</p>
+            </div>
+            {charges.length === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-sm text-[#6B6560]">No charges yet.</p>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#E0DDDA]">
+                    {['Service', 'Original', 'Discount', 'Final', 'Status', 'Date'].map(h => (
+                      <th key={h} className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-3">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {charges.map(charge => (
+                    <tr key={charge.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
+                      <td className="px-6 py-4 font-medium text-[#1B2A4A]">{charge.service_name}</td>
+                      <td className="px-6 py-4 text-[#6B6560]">€{charge.original_price}</td>
+                      <td className="px-6 py-4 text-green-600">
+                        {parseFloat(charge.discount_amount) > 0 ? `-€${charge.discount_amount}` : '—'}
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-[#1B2A4A]">€{charge.final_price}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
+                          ${charge.status === 'paid'   ? 'bg-green-50 text-green-700 border-green-200' :
+                            charge.status === 'waived' ? 'bg-gray-100 text-gray-500 border-gray-200' :
+                            'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                          {charge.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-[#6B6560]">
+                        {new Date(charge.created_at).toLocaleDateString('en-GB')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       )}
     </div>
