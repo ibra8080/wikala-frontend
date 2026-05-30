@@ -11,6 +11,7 @@ const adminLinks = [
   { label: 'Shipment Requests', href: '/admin/shipments' },
   { label: 'Messages',          href: '/admin/messages' },
   { label: 'Statements', href: '/admin/statements' },
+  { label: 'Web Services', href: '/admin/services' },
 ]
 
 export default function AdminSidebar() {
