@@ -205,7 +205,8 @@ export default function StatementsPage() {
       )
       if (!product) continue
 
-      const skuIndex = product.variants.findIndex(v => v.sku === inv.variant_sku)
+      const sortedVariants = [...product.variants].sort((a, b) => a.id - b.id)
+      const skuIndex = sortedVariants.findIndex(v => v.sku === inv.variant_sku)
       const listingCost = calcListingCost(product, skuIndex)
 
       const productCharges = charges.filter(c =>
@@ -457,7 +458,7 @@ export default function StatementsPage() {
                         <span className="text-sm font-semibold text-green-600">
                           {usage.code.discount_type === 'percent'
                             ? `${usage.code.value}% off`
-                            : `€${parseFloat(usage.code.value).toFixed(2)} off`}
+                            : `€${usage.code?.value ? parseFloat(usage.code.value).toFixed(2) : '0.00'} off`}
                         </span>
                         <span className="text-xs text-[#6B6560]">
                           {usage.code.applies_to === 'all'
