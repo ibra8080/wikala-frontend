@@ -36,8 +36,19 @@ interface Statement {
   created_at: string
 }
 
+interface WebService {
+  id: number
+  name: string
+  description: string
+  type: string
+  level: string
+  price: string
+  mandatory: boolean
+}
+
 interface WebServiceCharge {
   id: number
+  service: number
   service_name: string
   service_level: string
   product: number | null
@@ -86,6 +97,9 @@ export default function StatementsPage() {
   const [statements, setStatements] = useState<Statement[]>([])
   const [charges, setCharges] = useState<WebServiceCharge[]>([])
   const [myCodes, setMyCodes] = useState<SellerDiscountCode[]>([])
+  const [availableServices, setAvailableServices] = useState<WebService[]>([])
+  const [requestingService, setRequestingService] = useState<number | null>(null)
+  const [serviceMessage, setServiceMessage] = useState<{ id: number; type: 'success' | 'error'; text: string } | null>(null)
   const [codeInput, setCodeInput] = useState('')
   const [codeLoading, setCodeLoading] = useState(false)
   const [codeMessage, setCodeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -94,12 +108,13 @@ export default function StatementsPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [prodRes, invRes, stmtRes, chargesRes, codesRes] = await Promise.all([
+      const [prodRes, invRes, stmtRes, chargesRes, codesRes, svcRes] = await Promise.all([
         api.get('/products/'),
         api.get('/inventory/'),
         api.get('/finance/statements/'),
         api.get('/finance/charges/'),
         api.get('/finance/codes/'),
+        api.get('/finance/services/'),
       ])
       setProducts(prodRes.data)
       setInventory(invRes.data)
@@ -108,10 +123,25 @@ export default function StatementsPage() {
       ))
       setCharges(chargesRes.data)
       setMyCodes(codesRes.data)
+      setAvailableServices(svcRes.data.filter((s: WebService) => !s.mandatory))
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const handleRequestService = async (serviceId: number) => {
+    setRequestingService(serviceId)
+    setServiceMessage(null)
+    try {
+      await api.post('/finance/charges/', { service: serviceId })
+      setServiceMessage({ id: serviceId, type: 'success', text: 'Service activated successfully!' })
+      await fetchAll()
+    } catch {
+      setServiceMessage({ id: serviceId, type: 'error', text: 'Failed to activate service.' })
+    } finally {
+      setRequestingService(null)
+    }
+  }
 
   const handleApplyCode = async () => {
     if (!codeInput.trim()) return
@@ -409,6 +439,59 @@ export default function StatementsPage() {
               </div>
             )}
           </div>
+
+          {/* Available Optional Services */}
+          {availableServices.length > 0 && (
+            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
+              <div className="px-6 py-4 border-b border-[#E0DDDA] bg-[#F5F4F0]">
+                <p className="text-sm font-semibold text-[#1B2A4A]">Available Services</p>
+                <p className="text-xs text-[#6B6560] mt-0.5">Optional services you can activate for your account</p>
+              </div>
+              <div className="divide-y divide-[#E0DDDA]">
+                {availableServices.map(svc => {
+                  const alreadyActive = charges.some(c => c.service === svc.id)
+                  return (
+                    <div key={svc.id} className="px-6 py-4 flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-sm font-medium text-[#1B2A4A]">{svc.name}</p>
+                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border
+                            ${svc.type === 'one_time' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                              svc.type === 'monthly'  ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                            {svc.type.replace('_', ' ')}
+                          </span>
+                        </div>
+                        {svc.description && (
+                          <p className="text-xs text-[#6B6560]">{svc.description}</p>
+                        )}
+                        {serviceMessage?.id === svc.id && (
+                          <p className={`text-xs mt-1 font-medium ${serviceMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                            {serviceMessage.type === 'success' ? '✓' : '✗'} {serviceMessage.text}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 ml-4">
+                        <p className="font-semibold text-[#1B2A4A]">€{parseFloat(svc.price).toFixed(2)}</p>
+                        {alreadyActive ? (
+                          <span className="inline-flex px-3 py-1.5 rounded-lg text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                            ✓ Active
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleRequestService(svc.id)}
+                            disabled={requestingService === svc.id}
+                            className="bg-[#C8952E] text-white px-4 py-1.5 rounded-lg text-xs font-medium hover:bg-[#b07d25] disabled:opacity-50 transition">
+                            {requestingService === svc.id ? 'Activating...' : 'Activate'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Seller-level charges */}
           {charges.filter(c => c.service_level === 'seller').length > 0 && (
