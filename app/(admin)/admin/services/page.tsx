@@ -13,6 +13,7 @@ interface WebService {
   name: string
   description: string
   type: string
+  level: string
   price: string
   mandatory: boolean
   is_active: boolean
@@ -108,6 +109,7 @@ export default function AdminServicesPage() {
 
   const [newService, setNewService] = useState({
     name: '', description: '', type: 'one_time',
+    level: 'seller',
     price: '', mandatory: false, is_active: true,
   })
 
@@ -197,7 +199,7 @@ export default function AdminServicesPage() {
     try {
       await api.post('/finance/admin/services/', newService)
       setShowNewService(false)
-      setNewService({ name: '', description: '', type: 'one_time', price: '', mandatory: false, is_active: true })
+      setNewService({ name: '', description: '', type: 'one_time', level: 'seller', price: '', mandatory: false, is_active: true })
       await fetchAll()
     } finally {
       setActionLoading(null)
@@ -315,6 +317,15 @@ export default function AdminServicesPage() {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-xs text-[#6B6560] mb-1">Level *</label>
+                  <select value={newService.level}
+                    onChange={e => setNewService(p => ({ ...p, level: e.target.value }))}
+                    className={inputClass}>
+                    <option value="seller">Seller Level</option>
+                    <option value="product">Product Level</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-xs text-[#6B6560] mb-1">Price (€) *</label>
                   <input type="number" step="0.01" value={newService.price} onChange={e => setNewService(p => ({ ...p, price: e.target.value }))} className={inputClass} placeholder="0.00" />
                 </div>
@@ -347,7 +358,7 @@ export default function AdminServicesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
-                  {['Service', 'Type', 'Price', 'Mandatory', 'Status', ''].map(h => (
+                  {['Service', 'Type', 'Level', 'Price', 'Mandatory', 'Status', ''].map(h => (
                     <th key={h} className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">{h}</th>
                   ))}
                 </tr>
@@ -364,6 +375,14 @@ export default function AdminServicesPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${typeStyles[svc.type] ?? ''}`}>
                         {svc.type.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
+                        ${svc.level === 'seller'
+                          ? 'bg-purple-50 text-purple-700 border-purple-200'
+                          : 'bg-orange-50 text-orange-700 border-orange-200'}`}>
+                        {svc.level === 'seller' ? 'Seller' : 'Product'}
                       </span>
                     </td>
                     <td className="px-6 py-4 font-semibold text-[#1B2A4A]">{fmt(svc.price)}</td>
