@@ -15,6 +15,8 @@ interface Product {
   unit_width_cm: string
   unit_height_cm: string
   status: string
+  approved_at: string | null
+  variants: { id: number; sku: string | null }[]
 }
 
 interface InventoryItem {
@@ -86,6 +88,8 @@ interface SkuRow {
   storage_cost: number
   wikala_fee: number
   vat: number
+  listing_cost: number
+  web_services_cost: number
   profit: number
 }
 
@@ -180,6 +184,18 @@ export default function StatementsPage() {
   }
 
   // بناء جدول المتابعة
+  const calcListingCost = (product: Product, skuIndex: number): number => {
+    if (!product.approved_at) return 0
+    const approvedAt = new Date(product.approved_at)
+    const now = new Date()
+    const days = (now.getTime() - approvedAt.getTime()) / (1000 * 60 * 60 * 24)
+    const months = Math.max(0, Math.floor(days / 30) - 1)
+    if (months === 0) return 0
+    if (skuIndex === 0) return 2 * months
+    if (skuIndex <= 4) return 0
+    return 0.5 * months
+  }
+
   const buildRows = (): SkuRow[] => {
     const rows: SkuRow[] = []
 
@@ -189,12 +205,23 @@ export default function StatementsPage() {
       )
       if (!product) continue
 
+      const skuIndex = product.variants.findIndex(v => v.sku === inv.variant_sku)
+      const listingCost = calcListingCost(product, skuIndex)
+
+      const productCharges = charges.filter(c =>
+        c.service_level === 'product' &&
+        c.product_name === product.name_en
+      )
+      const webServicesCost = productCharges.reduce(
+        (sum, c) => sum + parseFloat(c.final_price), 0
+      )
+
       const price = parseFloat(product.price)
       const productionCost = parseFloat(product.production_cost ?? '0') || 0
       const storageCost = calcStorageCost(product, inv)
       const wikalaFee = (price * 0.15) + 1
       const vat = price * 0.19
-      const totalCosts = productionCost + storageCost + wikalaFee + vat
+      const totalCosts = productionCost + storageCost + wikalaFee + vat + listingCost + webServicesCost
       const profit = price - totalCosts
 
       rows.push({
@@ -208,6 +235,8 @@ export default function StatementsPage() {
         storage_cost: storageCost,
         wikala_fee: wikalaFee,
         vat,
+        listing_cost: listingCost,
+        web_services_cost: webServicesCost,
         profit,
       })
     }
@@ -276,7 +305,8 @@ export default function StatementsPage() {
                     <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
                       {[
                         'Product', 'SKU', 'Units Available', 'Units Sold',
-                        'Production Cost', 'Storage Cost', 'Wikala Fee (15%+1)',
+                        'Production Cost', 'Storage Cost', 'Listing Fee',
+                        'Web Services', 'Wikala Fee (15%+1)',
                         'VAT (19%)', 'Final Price', 'Est. Profit'
                       ].map(h => (
                         <th key={h} className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-4 py-3 whitespace-nowrap">
@@ -297,6 +327,8 @@ export default function StatementsPage() {
                         <td className="px-4 py-3 text-[#6B6560]">{row.units_sold}</td>
                         <td className="px-4 py-3 text-[#6B6560]">{fmt(row.production_cost)}</td>
                         <td className="px-4 py-3 text-[#6B6560]">{fmt(row.storage_cost)}</td>
+                        <td className="px-4 py-3 text-[#6B6560]">{fmt(row.listing_cost)}</td>
+                        <td className="px-4 py-3 text-[#6B6560]">{fmt(row.web_services_cost)}</td>
                         <td className="px-4 py-3 text-[#6B6560]">{fmt(row.wikala_fee)}</td>
                         <td className="px-4 py-3 text-[#6B6560]">{fmt(row.vat)}</td>
                         <td className="px-4 py-3 font-semibold text-[#1B2A4A]">{fmt(row.price)}</td>
