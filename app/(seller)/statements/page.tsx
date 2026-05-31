@@ -39,6 +39,9 @@ interface Statement {
 interface WebServiceCharge {
   id: number
   service_name: string
+  service_level: string
+  product: number | null
+  product_name: string | null
   original_price: string
   discount_amount: string
   final_price: string
@@ -50,7 +53,14 @@ interface WebServiceCharge {
 
 interface SellerDiscountCode {
   id: number
-  code: { code: string; name: string; discount_type: string; value: string; applies_to: string }
+  code: {
+    code: string
+    name: string
+    discount_type: string
+    value: string
+    applies_to: string
+    service_name: string | null
+  }
   applied_at: string
 }
 
@@ -385,10 +395,12 @@ export default function StatementsPage() {
                         <span className="text-sm font-semibold text-green-600">
                           {usage.code.discount_type === 'percent'
                             ? `${usage.code.value}% off`
-                            : `€${usage.code.value} off`}
+                            : `€${parseFloat(usage.code.value).toFixed(2)} off`}
                         </span>
                         <span className="text-xs text-[#6B6560]">
-                          {usage.code.applies_to === 'all' ? 'All services' : 'Specific service'}
+                          {usage.code.applies_to === 'all'
+                            ? 'All services'
+                            : usage.code.service_name ?? 'Specific service'}
                         </span>
                       </div>
                     </div>
@@ -398,16 +410,13 @@ export default function StatementsPage() {
             )}
           </div>
 
-          {/* Charges */}
-          <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#E0DDDA] bg-[#F5F4F0]">
-              <p className="text-sm font-semibold text-[#1B2A4A]">Service Charges</p>
-            </div>
-            {charges.length === 0 ? (
-              <div className="p-12 text-center">
-                <p className="text-sm text-[#6B6560]">No charges yet.</p>
+          {/* Seller-level charges */}
+          {charges.filter(c => c.service_level === 'seller').length > 0 && (
+            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
+              <div className="px-6 py-4 border-b border-[#E0DDDA] bg-[#F5F4F0] flex items-center justify-between">
+                <p className="text-sm font-semibold text-[#1B2A4A]">Seller Service Charges</p>
+                <span className="text-xs text-[#6B6560]">Charges applied to your account</span>
               </div>
-            ) : (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#E0DDDA]">
@@ -417,7 +426,7 @@ export default function StatementsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {charges.map(charge => (
+                  {charges.filter(c => c.service_level === 'seller').map(charge => (
                     <tr key={charge.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
                       <td className="px-6 py-4 font-medium text-[#1B2A4A]">{charge.service_name}</td>
                       <td className="px-6 py-4 text-[#6B6560]">€{charge.original_price}</td>
@@ -440,8 +449,58 @@ export default function StatementsPage() {
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Product-level charges */}
+          {charges.filter(c => c.service_level === 'product').length > 0 && (
+            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
+              <div className="px-6 py-4 border-b border-[#E0DDDA] bg-[#F5F4F0] flex items-center justify-between">
+                <p className="text-sm font-semibold text-[#1B2A4A]">Product Service Charges</p>
+                <span className="text-xs text-[#6B6560]">Charges applied per product</span>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#E0DDDA]">
+                    {['Service', 'Product', 'Original', 'Discount', 'Final', 'Status', 'Date'].map(h => (
+                      <th key={h} className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-3">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {charges.filter(c => c.service_level === 'product').map(charge => (
+                    <tr key={charge.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
+                      <td className="px-6 py-4 font-medium text-[#1B2A4A]">{charge.service_name}</td>
+                      <td className="px-6 py-4 text-[#6B6560]">{charge.product_name ?? '—'}</td>
+                      <td className="px-6 py-4 text-[#6B6560]">€{charge.original_price}</td>
+                      <td className="px-6 py-4 text-green-600">
+                        {parseFloat(charge.discount_amount) > 0 ? `-€${charge.discount_amount}` : '—'}
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-[#1B2A4A]">€{charge.final_price}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
+                          ${charge.status === 'paid'   ? 'bg-green-50 text-green-700 border-green-200' :
+                            charge.status === 'waived' ? 'bg-gray-100 text-gray-500 border-gray-200' :
+                            'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                          {charge.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-[#6B6560]">
+                        {new Date(charge.created_at).toLocaleDateString('en-GB')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {charges.length === 0 && (
+            <div className="bg-white rounded-2xl border border-[#E0DDDA] p-12 text-center">
+              <p className="text-sm text-[#6B6560]">No charges yet.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
