@@ -102,7 +102,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 bg-[#FAFAF8]/95 backdrop-blur border-b border-[#E0DDDA]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-[#1B2A4A]">Wik<span className="text-[#C8952E]">a</span>la</span>
+            <Image src="/wikala_Logo.svg" alt="Wikala" width={120} height={32} />
           </div>
           <div className="flex items-center gap-6">
             <Link href="/pricing" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">{t.nav.pricing}</Link>
@@ -193,7 +193,7 @@ export default function LandingPage() {
       <footer className="bg-[#1B2A4A] border-t border-white/10 py-12">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-4 gap-8">
           <div>
-            <span className="text-xl font-bold text-white">Wik<span className="text-[#C8952E]">a</span>la</span>
+            <Image src="/wikala_Logo_W.svg" alt="Wikala" width={120} height={32} className="mb-2" />
             <p className="text-sm text-white/50 mt-3 leading-relaxed">{t.footer.tagline}</p>
             <p className="text-xs text-[#C8952E] mt-3">{t.footer.made}</p>
           </div>
