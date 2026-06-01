@@ -60,7 +60,7 @@ export default function RegisterPage() {
       }, {
         headers: { Authorization: `Bearer ${loginRes.data.access}` }
       })
-      router.push('/login?registered=true')
+      router.push('/welcome')
     } catch (err: unknown) {
     const error = err as { response?: { data?: { email?: string[] } } }
     setError(error.response?.data?.email?.[0] || 'حدث خطأ، يرجى المحاولة مرة أخرى')

@@ -9,6 +9,7 @@ const sellerLinks = [
   { label: 'Inventory', href: '/inventory', icon: '▪' },
   { label: 'Statements', href: '/statements', icon: '▪' },
   { label: 'Messages', href: '/messages', icon: '▪' },
+  { label: 'Help Center', href: '/help', icon: '▪' },
 ]
 
 export default function Sidebar() {
