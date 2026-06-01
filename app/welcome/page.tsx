@@ -44,10 +44,10 @@ const content = {
     tips: {
       title: 'While You Wait',
       items: [
-        { icon: '📋', title: 'Complete your profile', desc: 'Make sure all your business details are accurate.' },
-        { icon: '📸', title: 'Prepare product photos', desc: 'High-quality images on white background work best.' },
-        { icon: '📏', title: 'Measure your products', desc: 'Have dimensions and weights ready for each product.' },
-        { icon: '💰', title: 'Review pricing', desc: 'Check our pricing page to understand all costs.' },
+        { icon: '📋', title: 'Complete your profile', desc: 'Make sure all your business details are accurate.', href: '/dashboard' },
+        { icon: '📸', title: 'Prepare product photos', desc: 'High-quality images on white background work best.', href: '/help#products' },
+        { icon: '📏', title: 'Measure your products', desc: 'Have dimensions and weights ready for each product.', href: '/help#products' },
+        { icon: '💰', title: 'Review pricing', desc: 'Check our pricing page to understand all costs.', href: '/pricing' },
       ]
     },
     cta: 'Go to Dashboard',
@@ -92,10 +92,10 @@ const content = {
     tips: {
       title: 'في انتظار الموافقة',
       items: [
-        { icon: '📋', title: 'أكمل ملفك الشخصي', desc: 'تأكد من دقة جميع بيانات نشاطك التجاري.' },
-        { icon: '📸', title: 'جهّز صور المنتجات', desc: 'الصور عالية الجودة على خلفية بيضاء هي الأفضل.' },
-        { icon: '📏', title: 'قِس منتجاتك', desc: 'احتفظ بالأبعاد والأوزان جاهزة لكل منتج.' },
-        { icon: '💰', title: 'راجع التسعير', desc: 'تحقق من صفحة التسعير لفهم جميع التكاليف.' },
+        { icon: '📋', title: 'أكمل ملفك الشخصي', desc: 'تأكد من دقة جميع بيانات نشاطك التجاري.', href: '/dashboard' },
+        { icon: '📸', title: 'جهّز صور المنتجات', desc: 'الصور عالية الجودة على خلفية بيضاء هي الأفضل.', href: '/help#products' },
+        { icon: '📏', title: 'قِس منتجاتك', desc: 'احتفظ بالأبعاد والأوزان جاهزة لكل منتج.', href: '/help#products' },
+        { icon: '💰', title: 'راجع التسعير', desc: 'تحقق من صفحة التسعير لفهم جميع التكاليف.', href: '/pricing' },
       ]
     },
     cta: 'اذهب إلى لوحة التحكم',
@@ -168,11 +168,12 @@ export default function WelcomePage() {
           <h2 className="font-semibold text-[#1B2A4A] mb-4">{t.tips.title}</h2>
           <div className="grid grid-cols-2 gap-4">
             {t.tips.items.map((tip, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-[#E0DDDA] p-5">
+              <Link key={i} href={tip.href}
+                className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:border-[#C8952E] transition group">
                 <div className="text-2xl mb-2">{tip.icon}</div>
-                <p className="font-medium text-[#1B2A4A] text-sm mb-1">{tip.title}</p>
+                <p className="font-medium text-[#1B2A4A] text-sm mb-1 group-hover:text-[#C8952E] transition">{tip.title}</p>
                 <p className="text-xs text-[#6B6560]">{tip.desc}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

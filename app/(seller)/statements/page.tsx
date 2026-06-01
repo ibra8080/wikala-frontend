@@ -300,8 +300,8 @@ export default function StatementsPage() {
             </div>
           ) : (
             <>
-              <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-x-auto mb-4">
-                <table className="w-full text-sm" style={{ minWidth: '1100px' }}>
+              <div className="bg-white rounded-2xl border border-[#E0DDDA] mb-4 overflow-x-auto">
+                <table className="text-sm" style={{ minWidth: '1100px' }}>
                   <thead>
                     <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
                       {[
