@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const sellerLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: '▪' },
+  { label: 'Getting Started', href: '/welcome', icon: '▪' },
   { label: 'Products', href: '/products', icon: '▪' },
   { label: 'Inventory', href: '/inventory', icon: '▪' },
   { label: 'Statements', href: '/statements', icon: '▪' },
