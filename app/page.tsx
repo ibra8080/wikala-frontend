@@ -137,7 +137,7 @@ export default function LandingPage() {
             className="bg-[#C8952E] text-white px-8 py-3.5 rounded-xl text-base font-semibold hover:bg-[#b07d25] transition shadow-sm">
             {t.hero.cta}
           </Link>
-          <Link href="/pricing"
+          <Link href={`/pricing?lang=${lang}`}
             className="text-[#1B2A4A] px-6 py-3.5 rounded-xl text-base font-medium border border-[#E0DDDA] hover:bg-[#F5F4F0] transition">
             {t.hero.ctaSub} →
           </Link>

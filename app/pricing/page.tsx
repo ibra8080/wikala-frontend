@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 const content = {
@@ -176,7 +177,10 @@ const content = {
 }
 
 export default function PricingPage() {
-  const [lang, setLang] = useState<'en' | 'ar'>('en')
+  const searchParams = useSearchParams()
+  const [lang, setLang] = useState<'en' | 'ar'>(
+    (searchParams.get('lang') as 'en' | 'ar') ?? 'en'
+  )
   const t = content[lang]
   const isAr = lang === 'ar'
 
