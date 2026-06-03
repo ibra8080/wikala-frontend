@@ -47,8 +47,14 @@ export default function RegisterPage() {
       }, { headers: { Authorization: `Bearer ${loginRes.data.access}` } })
       router.push('/welcome')
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { email?: string[] } } }
-      setError(error.response?.data?.email?.[0] || 'An error occurred. Please try again.')
+      const error = err as { response?: { data?: Record<string, string[]> } }
+      const data = error.response?.data
+      if (data) {
+        const firstError = Object.values(data)[0]
+        setError(Array.isArray(firstError) ? firstError[0] : 'An error occurred.')
+      } else {
+        setError('An error occurred. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -149,7 +155,7 @@ export default function RegisterPage() {
               {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
               <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(1)}
+                <button type="button" onClick={() => { setStep(1); setError('') }}
                   className="flex-1 border border-[#E0DDDA] text-[#6B6560] rounded-lg py-2.5 text-sm font-medium hover:bg-[#F5F4F0] transition">
                   ← Back
                 </button>
