@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
@@ -58,7 +58,7 @@ function unreadCount(conv: Conversation, sellerId: number): number {
   return conv.messages?.filter(m => m.sender !== sellerId && !m.is_read).length ?? 0
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
   const router = useRouter()
   const { user } = useAuthStore()
   const searchParams = useSearchParams()
@@ -448,5 +448,13 @@ export default function MessagesPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="w-6 h-6 border-2 border-[#C8952E] border-t-transparent rounded-full animate-spin" /></div>}>
+      <MessagesContent />
+    </Suspense>
   )
 }

@@ -1,7 +1,7 @@
 // app/pricing/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -176,7 +176,7 @@ const content = {
   }
 }
 
-export default function PricingPage() {
+function PricingContent() {
   const searchParams = useSearchParams()
   const [lang, setLang] = useState<'en' | 'ar'>(
     (searchParams.get('lang') as 'en' | 'ar') ?? 'en'
@@ -284,5 +284,13 @@ export default function PricingPage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="w-6 h-6 border-2 border-[#C8952E] border-t-transparent rounded-full animate-spin" /></div>}>
+      <PricingContent />
+    </Suspense>
   )
 }
