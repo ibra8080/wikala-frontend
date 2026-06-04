@@ -88,7 +88,7 @@ type Tab = 'shipments' | 'egypt' | 'germany'
 
 export default function InventoryPage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [activeTab, setActiveTab] = useState<Tab>('shipments')
   const [requests, setRequests] = useState<ShipmentRequest[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
@@ -112,6 +112,7 @@ export default function InventoryPage() {
   }, [])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchAll()
   }, [user, router, fetchAll])

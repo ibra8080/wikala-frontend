@@ -25,7 +25,7 @@ const statusStyles: Record<string, string> = {
 
 export default function AdminSellersPage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [sellers, setSellers] = useState<Seller[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending')
@@ -41,6 +41,7 @@ export default function AdminSellersPage() {
   }, [])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchSellers()

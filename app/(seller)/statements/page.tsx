@@ -95,7 +95,7 @@ interface SkuRow {
 
 export default function StatementsPage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [products, setProducts] = useState<Product[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [statements, setStatements] = useState<Statement[]>([])
@@ -165,6 +165,7 @@ export default function StatementsPage() {
   }
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchAll()
   }, [user, router, fetchAll])

@@ -30,13 +30,14 @@ interface Stats {
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [stats, setStats] = useState<Stats | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [issues, setIssues]               = useState<Issue[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
 

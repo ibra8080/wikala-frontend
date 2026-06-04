@@ -57,7 +57,7 @@ const tabs = [
 
 export default function AdminShipmentsPage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [requests, setRequests] = useState<ShipmentRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('submitted')
@@ -84,6 +84,7 @@ export default function AdminShipmentsPage() {
   }, [])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchRequests()

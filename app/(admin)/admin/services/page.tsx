@@ -91,7 +91,7 @@ const inputClass = "w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm 
 
 export default function AdminServicesPage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
 
   const [activeTab, setActiveTab] = useState<'services' | 'codes' | 'discounts' | 'charges'>('services')
   const [services, setServices]   = useState<WebService[]>([])
@@ -146,6 +146,7 @@ export default function AdminServicesPage() {
   }, [])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchAll()

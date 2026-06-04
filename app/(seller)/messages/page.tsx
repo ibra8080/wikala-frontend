@@ -60,7 +60,7 @@ function unreadCount(conv: Conversation, sellerId: number): number {
 
 function MessagesContent() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<'conversations' | 'issues'>('conversations')
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -100,6 +100,7 @@ function MessagesContent() {
   }, [fetchAll])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchAll()
   }, [user, router, fetchAll])

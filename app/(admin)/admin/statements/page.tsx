@@ -84,7 +84,7 @@ const tabs = ['all', 'draft', 'sent', 'paid']
 
 export default function AdminStatementsPage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
 
   const [statements, setStatements]     = useState<Statement[]>([])
   const [sellers, setSellers]           = useState<Seller[]>([])
@@ -121,6 +121,7 @@ export default function AdminStatementsPage() {
   }, [])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchAll()

@@ -24,7 +24,7 @@ interface RequestItem {
 
 export default function NewShipmentRequestPage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -56,6 +56,7 @@ export default function NewShipmentRequestPage() {
   }, [])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchProducts()
   }, [user, router, fetchProducts])

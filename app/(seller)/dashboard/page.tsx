@@ -28,7 +28,7 @@ interface InventoryItem {
 
 export default function SellerDashboard() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [issues, setIssues]               = useState<Issue[]>([])
@@ -39,6 +39,7 @@ export default function SellerDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     if (user.role !== 'seller') { router.push('/admin/dashboard'); return }
     Promise.all([

@@ -54,7 +54,7 @@ const tabs = [
 
 export default function AdminProductsPage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending_review')
@@ -72,6 +72,7 @@ export default function AdminProductsPage() {
   }, [])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchProducts()

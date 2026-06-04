@@ -80,7 +80,7 @@ function unreadCount(conv: Conversation, adminId: number): number {
 
 function AdminMessagesContent() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const searchParams = useSearchParams()
   const initialTab = (searchParams.get('tab') as 'conversations' | 'issues') ?? 'conversations'
 
@@ -113,6 +113,7 @@ function AdminMessagesContent() {
   }, [])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchAll()

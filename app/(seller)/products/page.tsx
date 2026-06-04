@@ -42,11 +42,12 @@ const statusLabels: Record<string, string> = {
 
 export default function ProductsPage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     api.get('/products/')
       .then(res => setProducts(res.data))

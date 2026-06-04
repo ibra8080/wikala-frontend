@@ -106,7 +106,7 @@ const content = {
 
 export default function WelcomePage() {
   const [lang, setLang] = useState<'en' | 'ar'>('en')
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const t = content[lang]
   const isAr = lang === 'ar'
 

@@ -145,7 +145,7 @@ type EditingField = string | null
 export default function ProductProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const { user } = useAuthStore()
+  const { user, _hasHydrated } = useAuthStore()
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
@@ -165,6 +165,7 @@ export default function ProductProfilePage() {
   }, [params.id])
 
   useEffect(() => {
+    if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchProduct()
   }, [user, router, fetchProduct])
