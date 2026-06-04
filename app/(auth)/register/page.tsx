@@ -38,13 +38,15 @@ export default function RegisterPage() {
       const loginRes = await api.post('/users/login/', {
         email: form.email, password: form.password,
       })
+      localStorage.setItem('access_token', loginRes.data.access)
+      localStorage.setItem('refresh_token', loginRes.data.refresh)
       await api.post('/sellers/register/', {
         full_name: form.full_name, business_name: form.business_name,
         phone: form.phone, whatsapp: form.whatsapp,
         country: form.country, city: form.city,
         exported_before: form.exported_before,
         referral_source: form.referral_source,
-      }, { headers: { Authorization: `Bearer ${loginRes.data.access}` } })
+      })
       router.push('/welcome')
     } catch (err: unknown) {
       const error = err as { response?: { data?: Record<string, string[]> } }
