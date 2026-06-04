@@ -150,6 +150,7 @@ export default function ProductProfilePage() {
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
   const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
   const [editingField, setEditingField] = useState<EditingField>(null)
   const [saving, setSaving] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
@@ -377,6 +378,22 @@ export default function ProductProfilePage() {
               <p className="text-xs text-[#6B6560] mb-1">Added</p>
               <p className="text-sm text-[#1B2A4A]">{new Date(product.created_at).toLocaleDateString('en-GB')}</p>
             </div>
+            {product.status === 'draft' && (
+              <>
+                {error && <p className="text-red-500 text-xs text-center">{error}</p>}
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.patch(`/products/${product.id}/`, { status: 'pending_review' })
+                      window.location.reload()
+                    } catch { setError('Failed to submit for review') }
+                  }}
+                  className="w-full mt-2 bg-[#1B2A4A] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#2a3d5c] transition"
+                >
+                  Submit for Review →
+                </button>
+              </>
+            )}
           </div>
         </div>
 
