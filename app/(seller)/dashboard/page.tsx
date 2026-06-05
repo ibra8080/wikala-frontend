@@ -68,7 +68,7 @@ export default function SellerDashboard() {
         .reduce((sum, s) => sum + parseFloat(s.net_amount), 0)
       setTotalSales(`€${totalNet.toFixed(2)}`)
     }).finally(() => setLoading(false))
-  }, [user])
+  }, [user, _hasHydrated])
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">

@@ -115,7 +115,7 @@ export default function InventoryPage() {
     if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchAll()
-  }, [user, router, fetchAll])
+  }, [user, _hasHydrated, router, fetchAll])
 
   const handleCancel = async (id: number) => {
     if (!confirm('Are you sure you want to cancel this request?')) return

@@ -76,7 +76,7 @@ export default function AdminProductsPage() {
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchProducts()
-  }, [user, router, fetchProducts])
+  }, [user, _hasHydrated, router, fetchProducts])
 
   const handleApprove = async (productId: number) => {
     setActionLoading(productId)

@@ -103,7 +103,7 @@ function MessagesContent() {
     if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchAll()
-  }, [user, router, fetchAll])
+  }, [user, _hasHydrated, router, fetchAll])
 
   useEffect(() => {
     const tab = searchParams.get('tab') as 'conversations' | 'issues' | null

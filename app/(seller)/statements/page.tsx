@@ -168,7 +168,7 @@ export default function StatementsPage() {
     if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchAll()
-  }, [user, router, fetchAll])
+  }, [user, _hasHydrated, router, fetchAll])
 
   // حساب تكلفة التخزين لكل SKU
   const calcStorageCost = (product: Product, inv: InventoryItem): number => {

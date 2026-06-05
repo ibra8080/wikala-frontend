@@ -117,7 +117,7 @@ function AdminMessagesContent() {
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchAll()
-  }, [user, router, fetchAll])
+  }, [user, _hasHydrated, router, fetchAll])
 
   useEffect(() => {
     selectedConvRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })

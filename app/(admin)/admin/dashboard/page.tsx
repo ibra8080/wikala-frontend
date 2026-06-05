@@ -67,7 +67,7 @@ export default function AdminDashboard() {
         awaiting_shipment: products.filter((p: { status: string }) => p.status === 'awaiting_seller_shipment').length,
       })
     }).finally(() => setLoading(false))
-  }, [user, router])
+  }, [user, _hasHydrated, router])
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">

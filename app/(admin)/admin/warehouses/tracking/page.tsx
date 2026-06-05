@@ -80,7 +80,7 @@ export default function TrackingPage() {
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchProducts()
-  }, [user, router, fetchProducts])
+  }, [user, _hasHydrated, router, fetchProducts])
 
   const handleAdvance = async (product: Product) => {
     const next = nextStatus[product.status]

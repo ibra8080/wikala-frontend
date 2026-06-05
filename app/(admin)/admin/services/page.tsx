@@ -150,7 +150,7 @@ export default function AdminServicesPage() {
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
     void fetchAll()
-  }, [user, router, fetchAll])
+  }, [user, _hasHydrated, router, fetchAll])
 
   // ── Actions ──────────────────────────────────────────────────────────────
 

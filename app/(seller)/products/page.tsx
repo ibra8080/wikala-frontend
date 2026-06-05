@@ -52,7 +52,7 @@ export default function ProductsPage() {
     api.get('/products/')
       .then(res => setProducts(res.data))
       .finally(() => setLoading(false))
-  }, [user, router])
+  }, [user, _hasHydrated, router])
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">

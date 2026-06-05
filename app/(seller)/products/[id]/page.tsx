@@ -168,7 +168,7 @@ export default function ProductProfilePage() {
     if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchProduct()
-  }, [user, router, fetchProduct])
+  }, [user, _hasHydrated, router, fetchProduct])
 
   const startEdit = (field: string, value: string) => {
     setEditingField(field)

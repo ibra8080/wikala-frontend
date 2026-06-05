@@ -59,7 +59,7 @@ export default function NewShipmentRequestPage() {
     if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchProducts()
-  }, [user, router, fetchProducts])
+  }, [user, _hasHydrated, router, fetchProducts])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
