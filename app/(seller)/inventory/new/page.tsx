@@ -6,17 +6,29 @@ import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 import Link from 'next/link'
 
+interface Variant {
+  id: number
+  sku: string
+  color: string
+  size: string
+}
+
 interface Product {
   id: number
   product_code: string
   name_en: string
   units_per_carton: number | null
+  status: string
+  variants: Variant[]
 }
 
 interface RequestItem {
-  product_id: number
+  variant_id: number
+  variant_sku: string
   product_name: string
   product_code: string
+  color: string
+  size: string
   cartons_count: number
   units_per_carton: number
   total_units: number
@@ -40,14 +52,14 @@ export default function NewShipmentRequestPage() {
   })
 
   const [items, setItems] = useState<RequestItem[]>([])
-  const [selectedProduct, setSelectedProduct] = useState('')
+  const [selectedVariant, setSelectedVariant] = useState('')
   const [cartonsCount, setCartonsCount] = useState(1)
 
   const fetchProducts = useCallback(async () => {
     try {
       const res = await api.get('/products/')
       const eligible = res.data.filter(
-        (p: Product & { status: string }) => p.status === 'awaiting_seller_shipment'
+        (p: Product) => ['approved', 'awaiting_seller_shipment'].includes(p.status)
       )
       setProducts(eligible)
     } finally {
@@ -65,34 +77,43 @@ export default function NewShipmentRequestPage() {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
+  // Build a flat list of all variants across eligible products
+  const allVariants = products.flatMap(p =>
+    p.variants.map(v => ({ ...v, product: p }))
+  )
+
   const addItem = () => {
-    const product = products.find(p => p.id === parseInt(selectedProduct))
-    if (!product) return
-    if (items.find(i => i.product_id === product.id)) {
-      setError('This product is already added.')
+    const variantId = parseInt(selectedVariant)
+    const entry = allVariants.find(v => v.id === variantId)
+    if (!entry) return
+    if (items.find(i => i.variant_id === variantId)) {
+      setError('This variant is already added.')
       return
     }
-    const unitsPerCarton = product.units_per_carton ?? 0
+    const unitsPerCarton = entry.product.units_per_carton ?? 0
     setItems(prev => [...prev, {
-      product_id: product.id,
-      product_name: product.name_en,
-      product_code: product.product_code,
+      variant_id: entry.id,
+      variant_sku: entry.sku || '—',
+      product_name: entry.product.name_en,
+      product_code: entry.product.product_code,
+      color: entry.color || '—',
+      size: entry.size || '—',
       cartons_count: cartonsCount,
       units_per_carton: unitsPerCarton,
       total_units: cartonsCount * unitsPerCarton,
     }])
-    setSelectedProduct('')
+    setSelectedVariant('')
     setCartonsCount(1)
     setError('')
   }
 
-  const removeItem = (productId: number) => {
-    setItems(prev => prev.filter(i => i.product_id !== productId))
+  const removeItem = (variantId: number) => {
+    setItems(prev => prev.filter(i => i.variant_id !== variantId))
   }
 
-  const updateCartons = (productId: number, count: number) => {
+  const updateCartons = (variantId: number, count: number) => {
     setItems(prev => prev.map(i =>
-      i.product_id === productId
+      i.variant_id === variantId
         ? { ...i, cartons_count: count, total_units: count * i.units_per_carton }
         : i
     ))
@@ -105,7 +126,7 @@ export default function NewShipmentRequestPage() {
     if (form.delivery_method === 'pickup' && !form.delivery_address) {
       setError('Please enter delivery address for pickup.'); return
     }
-    if (items.length === 0) { setError('Please add at least one product.'); return }
+    if (items.length === 0) { setError('Please add at least one variant.'); return }
 
     setSubmitting(true)
     setError('')
@@ -119,7 +140,7 @@ export default function NewShipmentRequestPage() {
         contact_person: form.contact_person,
         contact_number: form.contact_number,
         items: items.map(i => ({
-          product: i.product_id,
+          variant: i.variant_id,
           cartons_count: i.cartons_count,
         })),
       })
@@ -152,7 +173,7 @@ export default function NewShipmentRequestPage() {
 
       <h1 className="text-2xl font-bold text-[#1B2A4A] mb-2">New Shipment Request</h1>
       <p className="text-sm text-[#6B6560] mb-8">
-        Specify your available products and delivery preferences. Our team will confirm the arrangement.
+        Select the product variants (SKUs) you want to ship and specify carton quantities.
       </p>
 
       <div className="grid grid-cols-3 gap-6">
@@ -161,20 +182,14 @@ export default function NewShipmentRequestPage() {
           {/* Availability & Delivery */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6 space-y-5">
             <h2 className="font-semibold text-[#1B2A4A]">Availability & Delivery</h2>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Available From <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="date"
-                  name="available_from"
-                  value={form.available_from}
-                  onChange={handleChange}
-                  min={new Date().toISOString().split('T')[0]}
-                  className={inputClass}
-                />
+                <input type="date" name="available_from" value={form.available_from}
+                  onChange={handleChange} min={new Date().toISOString().split('T')[0]}
+                  className={inputClass} />
                 <p className="text-xs text-[#6B6560] mt-1">Earliest date we can collect your products</p>
               </div>
               <div>
@@ -187,20 +202,14 @@ export default function NewShipmentRequestPage() {
                 </select>
               </div>
             </div>
-
             {form.delivery_method === 'pickup' && (
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Pickup Address <span className="text-red-400">*</span>
                 </label>
-                <textarea
-                  name="delivery_address"
-                  value={form.delivery_address}
-                  onChange={handleChange}
-                  rows={2}
-                  placeholder="Full address for pickup..."
-                  className={inputClass + ' resize-none'}
-                />
+                <textarea name="delivery_address" value={form.delivery_address}
+                  onChange={handleChange} rows={2} placeholder="Full address for pickup..."
+                  className={inputClass + ' resize-none'} />
               </div>
             )}
           </div>
@@ -213,78 +222,56 @@ export default function NewShipmentRequestPage() {
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Responsible Person <span className="text-red-400">*</span>
                 </label>
-                <input
-                  name="contact_person"
-                  value={form.contact_person}
-                  onChange={handleChange}
-                  placeholder="Full name"
-                  className={inputClass}
-                />
+                <input name="contact_person" value={form.contact_person}
+                  onChange={handleChange} placeholder="Full name" className={inputClass} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Contact Number <span className="text-red-400">*</span>
                 </label>
-                <input
-                  name="contact_number"
-                  value={form.contact_number}
-                  onChange={handleChange}
-                  placeholder="+20 xxx xxx xxxx"
-                  className={inputClass}
-                />
+                <input name="contact_number" value={form.contact_number}
+                  onChange={handleChange} placeholder="+20 xxx xxx xxxx" className={inputClass} />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">Additional Notes</label>
-              <textarea
-                name="notes"
-                value={form.notes}
-                onChange={handleChange}
-                rows={2}
-                placeholder="Any special instructions or notes..."
-                className={inputClass + ' resize-none'}
-              />
+              <textarea name="notes" value={form.notes} onChange={handleChange}
+                rows={2} placeholder="Any special instructions or notes..."
+                className={inputClass + ' resize-none'} />
             </div>
           </div>
 
-          {/* Products */}
+          {/* Products / Variants */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
-            <h2 className="font-semibold text-[#1B2A4A] mb-4">Products</h2>
+            <h2 className="font-semibold text-[#1B2A4A] mb-4">Products — Select by SKU</h2>
 
-            {products.length === 0 ? (
+            {allVariants.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-sm text-[#6B6560]">
                   No products available for shipment. Products must be in
+                  <span className="font-medium text-[#1B2A4A]"> Approved</span> or
                   <span className="font-medium text-[#1B2A4A]"> Awaiting Shipment</span> status.
                 </p>
               </div>
             ) : (
               <div className="flex gap-3 mb-4">
-                <select
-                  value={selectedProduct}
-                  onChange={e => setSelectedProduct(e.target.value)}
-                  className="flex-1 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition"
-                >
-                  <option value="">Select a product...</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name_en} — {p.product_code}
-                    </option>
-                  ))}
+                <select value={selectedVariant} onChange={e => setSelectedVariant(e.target.value)}
+                  className="flex-1 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition">
+                  <option value="">Select a variant (SKU)...</option>
+                  {allVariants
+                    .filter(v => !items.find(i => i.variant_id === v.id))
+                    .map(v => (
+                      <option key={v.id} value={v.id}>
+                        {v.product.name_en} — {v.color}{v.size ? ` / ${v.size}` : ''} — {v.sku || 'No SKU'}
+                      </option>
+                    ))}
                 </select>
-                <input
-                  type="number"
-                  value={cartonsCount}
+                <input type="number" value={cartonsCount}
                   onChange={e => setCartonsCount(parseInt(e.target.value) || 1)}
-                  min={1}
-                  placeholder="Cartons"
-                  className="w-28 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition"
-                />
-                <button
-                  onClick={addItem}
-                  disabled={!selectedProduct}
-                  className="bg-[#1B2A4A] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#243860] disabled:opacity-40 transition"
-                >
+                  min={1} placeholder="Cartons"
+                  className="w-28 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition" />
+                <button onClick={addItem} disabled={!selectedVariant}
+                  className="bg-[#1B2A4A] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#243860] disabled:opacity-40 transition">
                   Add
                 </button>
               </div>
@@ -295,7 +282,8 @@ export default function NewShipmentRequestPage() {
                 <thead>
                   <tr className="border-b border-[#E0DDDA]">
                     <th className="text-left text-xs text-[#6B6560] pb-2">Product</th>
-                    <th className="text-left text-xs text-[#6B6560] pb-2">Code</th>
+                    <th className="text-left text-xs text-[#6B6560] pb-2">SKU</th>
+                    <th className="text-left text-xs text-[#6B6560] pb-2">Color / Size</th>
                     <th className="text-left text-xs text-[#6B6560] pb-2">Cartons</th>
                     <th className="text-left text-xs text-[#6B6560] pb-2">Units/Carton</th>
                     <th className="text-left text-xs text-[#6B6560] pb-2">Total</th>
@@ -304,25 +292,21 @@ export default function NewShipmentRequestPage() {
                 </thead>
                 <tbody>
                   {items.map(item => (
-                    <tr key={item.product_id} className="border-b border-[#E0DDDA] last:border-0">
+                    <tr key={item.variant_id} className="border-b border-[#E0DDDA] last:border-0">
                       <td className="py-3 text-[#1B2A4A] font-medium">{item.product_name}</td>
-                      <td className="py-3 font-mono text-xs text-[#6B6560]">{item.product_code}</td>
+                      <td className="py-3 font-mono text-xs text-[#6B6560]">{item.variant_sku}</td>
+                      <td className="py-3 text-[#6B6560] text-xs">{item.color}{item.size !== '—' ? ` / ${item.size}` : ''}</td>
                       <td className="py-3">
-                        <input
-                          type="number"
-                          value={item.cartons_count}
-                          onChange={e => updateCartons(item.product_id, parseInt(e.target.value) || 1)}
+                        <input type="number" value={item.cartons_count}
+                          onChange={e => updateCartons(item.variant_id, parseInt(e.target.value) || 1)}
                           min={1}
-                          className="w-20 border border-[#E0DDDA] rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-[#1B2A4A]"
-                        />
+                          className="w-20 border border-[#E0DDDA] rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-[#1B2A4A]" />
                       </td>
                       <td className="py-3 text-[#6B6560]">{item.units_per_carton}</td>
                       <td className="py-3 font-semibold text-[#1B2A4A]">{item.total_units}</td>
                       <td className="py-3">
-                        <button onClick={() => removeItem(item.product_id)}
-                          className="text-red-400 hover:text-red-600 text-xs">
-                          Remove
-                        </button>
+                        <button onClick={() => removeItem(item.variant_id)}
+                          className="text-red-400 hover:text-red-600 text-xs">Remove</button>
                       </td>
                     </tr>
                   ))}
@@ -334,18 +318,13 @@ export default function NewShipmentRequestPage() {
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <div className="flex gap-3">
-            <button
-              onClick={() => handleSubmit(true)}
-              disabled={submitting}
-              className="border border-[#E0DDDA] text-[#1B2A4A] px-6 py-2.5 rounded-lg text-sm font-medium hover:border-[#1B2A4A] disabled:opacity-40 transition"
-            >
+            <button onClick={() => handleSubmit(true)} disabled={submitting}
+              className="border border-[#E0DDDA] text-[#1B2A4A] px-6 py-2.5 rounded-lg text-sm font-medium hover:border-[#1B2A4A] disabled:opacity-40 transition">
               Save as Draft
             </button>
-            <button
-              onClick={() => handleSubmit(false)}
+            <button onClick={() => handleSubmit(false)}
               disabled={submitting || items.length === 0 || !form.available_from || !form.contact_person || !form.contact_number}
-              className="bg-[#C8952E] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-40 transition"
-            >
+              className="bg-[#C8952E] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-40 transition">
               {submitting ? 'Submitting...' : 'Submit Request →'}
             </button>
           </div>
@@ -357,7 +336,7 @@ export default function NewShipmentRequestPage() {
             <h2 className="font-semibold text-[#1B2A4A] mb-4">Summary</h2>
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-[#6B6560]">Products</span>
+                <span className="text-[#6B6560]">SKUs</span>
                 <span className="font-medium text-[#1B2A4A]">{items.length}</span>
               </div>
               <div className="flex justify-between text-sm">
