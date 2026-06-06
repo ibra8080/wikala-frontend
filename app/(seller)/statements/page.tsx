@@ -137,7 +137,7 @@ export default function StatementsPage() {
     setRequestingService(serviceId)
     setServiceMessage(null)
     try {
-      await api.post('/finance/charges/', { service: serviceId })
+      await api.post(`/finance/services/${serviceId}/activate/`)
       setServiceMessage({ id: serviceId, type: 'success', text: 'Service activated successfully!' })
       await fetchAll()
     } catch {
