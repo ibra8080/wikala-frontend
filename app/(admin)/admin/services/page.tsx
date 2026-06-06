@@ -1,7 +1,7 @@
 // app/(admin)/admin/services/page.tsx
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
@@ -124,6 +124,14 @@ export default function AdminServicesPage() {
     value: '', valid_until: '', is_active: true, note: '',
   })
 
+  // ── Editing states ──
+  const [editingService, setEditingService] = useState<number | null>(null)
+  const [editServiceForm, setEditServiceForm] = useState({ name: '', description: '', price: '', mandatory: false })
+  const [editingCode, setEditingCode] = useState<number | null>(null)
+  const [editCodeForm, setEditCodeForm] = useState({ name: '', value: '', valid_until: '' })
+  const [editingDiscount, setEditingDiscount] = useState<number | null>(null)
+  const [editDiscountForm, setEditDiscountForm] = useState({ value: '', valid_until: '', note: '' })
+
   // ── Fetch ────────────────────────────────────────────────────────────────
 
   const fetchAll = useCallback(async () => {
@@ -182,6 +190,49 @@ export default function AdminServicesPage() {
     } finally {
       setActionLoading(null)
     }
+  }
+
+  const startEditService = (svc: WebService) => {
+    setEditingService(svc.id)
+    setEditServiceForm({ name: svc.name, description: svc.description, price: svc.price, mandatory: svc.mandatory })
+  }
+  const handleSaveService = async (id: number) => {
+    setActionLoading(id)
+    try {
+      await api.patch(`/finance/admin/services/${id}/`, editServiceForm)
+      setEditingService(null)
+      await fetchAll()
+    } catch {
+      alert('Cannot edit — service may have existing charges.')
+    } finally { setActionLoading(null) }
+  }
+  const startEditCode = (code: DiscountCode) => {
+    setEditingCode(code.id)
+    setEditCodeForm({ name: code.name, value: code.value, valid_until: code.valid_until || '' })
+  }
+  const handleSaveCode = async (id: number) => {
+    setActionLoading(id)
+    try {
+      await api.patch(`/finance/admin/codes/${id}/`, editCodeForm)
+      setEditingCode(null)
+      await fetchAll()
+    } catch {
+      alert('Cannot edit — code may have been used.')
+    } finally { setActionLoading(null) }
+  }
+  const startEditDiscount = (disc: SellerDiscount) => {
+    setEditingDiscount(disc.id)
+    setEditDiscountForm({ value: disc.value, valid_until: disc.valid_until || '', note: disc.note })
+  }
+  const handleSaveDiscount = async (id: number) => {
+    setActionLoading(id)
+    try {
+      await api.patch(`/finance/admin/discounts/${id}/`, editDiscountForm)
+      setEditingDiscount(null)
+      await fetchAll()
+    } catch {
+      alert('Cannot edit — discount may be linked to charges.')
+    } finally { setActionLoading(null) }
   }
 
   const handleChargeStatusChange = async (id: number, status: string) => {
@@ -368,44 +419,80 @@ export default function AdminServicesPage() {
                 {services.length === 0 ? (
                   <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-[#6B6560]">No services yet.</td></tr>
                 ) : services.map(svc => (
-                  <tr key={svc.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-[#1B2A4A]">{svc.name}</p>
-                      {svc.description && <p className="text-xs text-[#6B6560] mt-0.5">{svc.description}</p>}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${typeStyles[svc.type] ?? ''}`}>
-                        {svc.type.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
-                        ${svc.level === 'seller'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200'
-                          : 'bg-orange-50 text-orange-700 border-orange-200'}`}>
-                        {svc.level === 'seller' ? 'Seller' : 'Product'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-[#1B2A4A]">{fmt(svc.price)}</td>
-                    <td className="px-6 py-4">
-                      {svc.mandatory
-                        ? <span className="text-xs text-amber-700 font-medium">Mandatory</span>
-                        : <span className="text-xs text-[#6B6560]">Optional</span>}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
-                        ${svc.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                        {svc.is_active ? 'Active' : 'Hidden'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button onClick={() => handleToggleService(svc.id, svc.is_active)}
-                        disabled={actionLoading === svc.id}
-                        className="text-xs text-[#C8952E] hover:underline disabled:opacity-50">
-                        {svc.is_active ? 'Hide' : 'Show'}
-                      </button>
-                    </td>
-                  </tr>
+                  <Fragment key={svc.id}>
+                    <tr className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-[#1B2A4A]">{svc.name}</p>
+                        {svc.description && <p className="text-xs text-[#6B6560] mt-0.5">{svc.description}</p>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${typeStyles[svc.type] ?? ''}`}>
+                          {svc.type.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
+                          ${svc.level === 'seller'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-orange-50 text-orange-700 border-orange-200'}`}>
+                          {svc.level === 'seller' ? 'Seller' : 'Product'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-[#1B2A4A]">{fmt(svc.price)}</td>
+                      <td className="px-6 py-4">
+                        {svc.mandatory
+                          ? <span className="text-xs text-amber-700 font-medium">Mandatory</span>
+                          : <span className="text-xs text-[#6B6560]">Optional</span>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
+                          ${svc.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                          {svc.is_active ? 'Active' : 'Hidden'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button onClick={() => startEditService(svc)}
+                          className="text-xs text-[#1B2A4A] hover:underline mr-3">
+                          Edit
+                        </button>
+                        <button onClick={() => handleToggleService(svc.id, svc.is_active)}
+                          disabled={actionLoading === svc.id}
+                          className="text-xs text-[#C8952E] hover:underline disabled:opacity-50">
+                          {svc.is_active ? 'Hide' : 'Show'}
+                        </button>
+                      </td>
+                    </tr>
+                    {editingService === svc.id && (
+                      <tr className="bg-blue-50 border-b border-[#E0DDDA]">
+                        <td colSpan={7} className="px-6 py-4">
+                          <div className="flex gap-3 items-end flex-wrap">
+                            <div>
+                              <label className="text-xs text-[#6B6560]">Name</label>
+                              <input value={editServiceForm.name} onChange={e => setEditServiceForm(p => ({...p, name: e.target.value}))}
+                                className="block border border-[#E0DDDA] rounded px-3 py-1.5 text-sm w-48" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-[#6B6560]">Price (€)</label>
+                              <input type="number" value={editServiceForm.price} onChange={e => setEditServiceForm(p => ({...p, price: e.target.value}))}
+                                className="block border border-[#E0DDDA] rounded px-3 py-1.5 text-sm w-24" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-[#6B6560]">Description</label>
+                              <input value={editServiceForm.description} onChange={e => setEditServiceForm(p => ({...p, description: e.target.value}))}
+                                className="block border border-[#E0DDDA] rounded px-3 py-1.5 text-sm w-64" />
+                            </div>
+                            <label className="flex items-center gap-1 text-xs">
+                              <input type="checkbox" checked={editServiceForm.mandatory} onChange={e => setEditServiceForm(p => ({...p, mandatory: e.target.checked}))} />
+                              Mandatory
+                            </label>
+                            <button onClick={() => handleSaveService(svc.id)} disabled={actionLoading === svc.id}
+                              className="bg-[#1B2A4A] text-white px-4 py-1.5 rounded text-xs disabled:opacity-50">Save</button>
+                            <button onClick={() => setEditingService(null)} className="text-xs text-[#6B6560]">Cancel</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -491,46 +578,78 @@ export default function AdminServicesPage() {
                 {codes.length === 0 ? (
                   <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-[#6B6560]">No codes yet.</td></tr>
                 ) : codes.map(code => (
-                  <tr key={code.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition">
-                    <td className="px-6 py-4">
-                      <p className="font-mono font-semibold text-[#1B2A4A]">{code.code}</p>
-                      <p className="text-xs text-[#6B6560] mt-0.5">{code.name}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-[#1B2A4A]">
-                        {code.discount_type === 'percent' ? `${code.value}%` : fmt(code.value)}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#6B6560]">
-                        {code.applies_to === 'all' ? 'All Services' : code.service_name ?? '—'}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-xs text-[#6B6560]">
-                        {new Date(code.valid_from).toLocaleDateString('en-GB')}
-                        {code.valid_until && ` → ${new Date(code.valid_until).toLocaleDateString('en-GB')}`}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#1B2A4A]">
-                        {code.used_count}{code.max_uses ? `/${code.max_uses}` : ''}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
-                        ${code.is_valid ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                        {code.is_valid ? 'Valid' : 'Expired'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button onClick={() => handleToggleCode(code.id, code.is_active)}
-                        disabled={actionLoading === code.id}
-                        className="text-xs text-[#C8952E] hover:underline disabled:opacity-50">
-                        {code.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                    </td>
-                  </tr>
+                  <Fragment key={code.id}>
+                    <tr className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition">
+                      <td className="px-6 py-4">
+                        <p className="font-mono font-semibold text-[#1B2A4A]">{code.code}</p>
+                        <p className="text-xs text-[#6B6560] mt-0.5">{code.name}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-semibold text-[#1B2A4A]">
+                          {code.discount_type === 'percent' ? `${code.value}%` : fmt(code.value)}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-[#6B6560]">
+                          {code.applies_to === 'all' ? 'All Services' : code.service_name ?? '—'}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-xs text-[#6B6560]">
+                          {new Date(code.valid_from).toLocaleDateString('en-GB')}
+                          {code.valid_until && ` → ${new Date(code.valid_until).toLocaleDateString('en-GB')}`}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-[#1B2A4A]">
+                          {code.used_count}{code.max_uses ? `/${code.max_uses}` : ''}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
+                          ${code.is_valid ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                          {code.is_valid ? 'Valid' : 'Expired'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button onClick={() => startEditCode(code)}
+                          className="text-xs text-[#1B2A4A] hover:underline mr-3">
+                          Edit
+                        </button>
+                        <button onClick={() => handleToggleCode(code.id, code.is_active)}
+                          disabled={actionLoading === code.id}
+                          className="text-xs text-[#C8952E] hover:underline disabled:opacity-50">
+                          {code.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </td>
+                    </tr>
+                    {editingCode === code.id && (
+                      <tr className="bg-blue-50 border-b border-[#E0DDDA]">
+                        <td colSpan={7} className="px-6 py-4">
+                          <div className="flex gap-3 items-end flex-wrap">
+                            <div>
+                              <label className="text-xs text-[#6B6560]">Name</label>
+                              <input value={editCodeForm.name} onChange={e => setEditCodeForm(p => ({...p, name: e.target.value}))}
+                                className="block border border-[#E0DDDA] rounded px-3 py-1.5 text-sm w-48" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-[#6B6560]">Value</label>
+                              <input type="number" value={editCodeForm.value} onChange={e => setEditCodeForm(p => ({...p, value: e.target.value}))}
+                                className="block border border-[#E0DDDA] rounded px-3 py-1.5 text-sm w-24" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-[#6B6560]">Valid Until</label>
+                              <input type="date" value={editCodeForm.valid_until} onChange={e => setEditCodeForm(p => ({...p, valid_until: e.target.value}))}
+                                className="block border border-[#E0DDDA] rounded px-3 py-1.5 text-sm" />
+                            </div>
+                            <button onClick={() => handleSaveCode(code.id)} disabled={actionLoading === code.id}
+                              className="bg-[#1B2A4A] text-white px-4 py-1.5 rounded text-xs disabled:opacity-50">Save</button>
+                            <button onClick={() => setEditingCode(null)} className="text-xs text-[#6B6560]">Cancel</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -602,32 +721,64 @@ export default function AdminServicesPage() {
                 {discounts.length === 0 ? (
                   <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-[#6B6560]">No discounts yet.</td></tr>
                 ) : discounts.map(disc => (
-                  <tr key={disc.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-[#1B2A4A]">{disc.seller_name}</p>
-                      {disc.note && <p className="text-xs text-[#6B6560] mt-0.5">{disc.note}</p>}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#6B6560]">{disc.service_name ?? 'All Services'}</td>
-                    <td className="px-6 py-4 font-semibold text-[#1B2A4A]">
-                      {disc.discount_type === 'percent' ? `${disc.value}%` : fmt(disc.value)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#6B6560]">
-                      {disc.valid_until ? new Date(disc.valid_until).toLocaleDateString('en-GB') : 'No expiry'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
-                        ${disc.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                        {disc.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button onClick={() => handleToggleDiscount(disc.id, disc.is_active)}
-                        disabled={actionLoading === disc.id}
-                        className="text-xs text-[#C8952E] hover:underline disabled:opacity-50">
-                        {disc.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                    </td>
-                  </tr>
+                  <Fragment key={disc.id}>
+                    <tr className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-[#1B2A4A]">{disc.seller_name}</p>
+                        {disc.note && <p className="text-xs text-[#6B6560] mt-0.5">{disc.note}</p>}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#6B6560]">{disc.service_name ?? 'All Services'}</td>
+                      <td className="px-6 py-4 font-semibold text-[#1B2A4A]">
+                        {disc.discount_type === 'percent' ? `${disc.value}%` : fmt(disc.value)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#6B6560]">
+                        {disc.valid_until ? new Date(disc.valid_until).toLocaleDateString('en-GB') : 'No expiry'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
+                          ${disc.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                          {disc.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button onClick={() => startEditDiscount(disc)}
+                          className="text-xs text-[#1B2A4A] hover:underline mr-3">
+                          Edit
+                        </button>
+                        <button onClick={() => handleToggleDiscount(disc.id, disc.is_active)}
+                          disabled={actionLoading === disc.id}
+                          className="text-xs text-[#C8952E] hover:underline disabled:opacity-50">
+                          {disc.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </td>
+                    </tr>
+                    {editingDiscount === disc.id && (
+                      <tr className="bg-blue-50 border-b border-[#E0DDDA]">
+                        <td colSpan={6} className="px-6 py-4">
+                          <div className="flex gap-3 items-end flex-wrap">
+                            <div>
+                              <label className="text-xs text-[#6B6560]">Value</label>
+                              <input type="number" value={editDiscountForm.value} onChange={e => setEditDiscountForm(p => ({...p, value: e.target.value}))}
+                                className="block border border-[#E0DDDA] rounded px-3 py-1.5 text-sm w-24" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-[#6B6560]">Valid Until</label>
+                              <input type="date" value={editDiscountForm.valid_until} onChange={e => setEditDiscountForm(p => ({...p, valid_until: e.target.value}))}
+                                className="block border border-[#E0DDDA] rounded px-3 py-1.5 text-sm" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-[#6B6560]">Note</label>
+                              <input value={editDiscountForm.note} onChange={e => setEditDiscountForm(p => ({...p, note: e.target.value}))}
+                                className="block border border-[#E0DDDA] rounded px-3 py-1.5 text-sm w-48" />
+                            </div>
+                            <button onClick={() => handleSaveDiscount(disc.id)} disabled={actionLoading === disc.id}
+                              className="bg-[#1B2A4A] text-white px-4 py-1.5 rounded text-xs disabled:opacity-50">Save</button>
+                            <button onClick={() => setEditingDiscount(null)} className="text-xs text-[#6B6560]">Cancel</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
