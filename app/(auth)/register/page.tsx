@@ -30,6 +30,16 @@ export default function RegisterPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      setLoading(false)
+      return
+    }
+    if (form.password !== form.password2) {
+      setError('Passwords do not match.')
+      setLoading(false)
+      return
+    }
     try {
       await api.post('/users/register/', {
         email: form.email, username: form.username,
