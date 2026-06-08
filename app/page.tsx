@@ -3,11 +3,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import PublicNavbar from '@/components/ui/PublicNavbar'
+import PublicFooter from '@/components/ui/PublicFooter'
 
 const content = {
   en: {
-    nav: { login: 'Login', register: 'Start Selling', pricing: 'Pricing', help: 'Help' },
     hero: {
       badge: 'Made in Egypt · Sold in Europe',
       title: 'Sell Your Egyptian Products Across Europe',
@@ -38,17 +38,8 @@ const content = {
       subtitle: 'Join Wikala and bring your Egyptian products to European markets.',
       btn: 'Create Your Seller Account',
     },
-    footer: {
-      tagline: 'The first e-commerce platform dedicated to authentic Egyptian-made products.',
-      made: 'Made in Egypt — Sold in Europe',
-      links: ['Dashboard', 'My Products', 'Inventory', 'Statements', 'Messages'],
-      store: ['Shop', 'Categories', 'New Arrivals', 'Best Sellers'],
-      contact: 'Bremen, Germany',
-      site: 'wikala.shop',
-    }
   },
   ar: {
-    nav: { login: 'تسجيل الدخول', register: 'ابدأ البيع', pricing: 'التسعير', help: 'المساعدة' },
     hero: {
       badge: 'صُنع في مصر · يُباع في أوروبا',
       title: 'بع منتجاتك المصرية في أوروبا',
@@ -79,14 +70,6 @@ const content = {
       subtitle: 'انضم إلى وكالة وأوصل منتجاتك المصرية إلى الأسواق الأوروبية.',
       btn: 'أنشئ حساب بائع',
     },
-    footer: {
-      tagline: 'أول منصة تجارة إلكترونية متخصصة في المنتجات المصرية الأصيلة.',
-      made: 'صُنع في مصر — يُباع في أوروبا',
-      links: ['لوحة التحكم', 'منتجاتي', 'المخزون', 'كشوف الحساب', 'الرسائل'],
-      store: ['المتجر', 'الفئات', 'وصل حديثاً', 'الأكثر مبيعاً'],
-      contact: 'بريمن، ألمانيا',
-      site: 'wikala.shop',
-    }
   }
 }
 
@@ -98,28 +81,7 @@ export default function LandingPage() {
   return (
     <div className={`min-h-screen bg-[#FAFAF8] ${isAr ? 'font-arabic' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>
 
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-[#FAFAF8]/95 backdrop-blur border-b border-[#E0DDDA]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Image src="/wikala_Logo.svg" alt="Wikala" width={120} height={32} />
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/pricing" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">{t.nav.pricing}</Link>
-            <Link href="/help" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">{t.nav.help}</Link>
-            <Link href="/login" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">{t.nav.login}</Link>
-            <Link href="/register"
-              className="bg-[#1B2A4A] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#243860] transition">
-              {t.nav.register}
-            </Link>
-            <button
-              onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-              className="text-xs border border-[#E0DDDA] px-3 py-1.5 rounded-lg text-[#6B6560] hover:bg-[#F5F4F0] transition">
-              {lang === 'en' ? 'عربي' : 'EN'}
-            </button>
-          </div>
-        </div>
-      </nav>
+      <PublicNavbar lang={lang} onLangChange={setLang} />
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 py-24 text-center">
@@ -189,36 +151,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#1B2A4A] border-t border-white/10 py-12">
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-4 gap-8">
-          <div>
-            <Image src="/wikala_Logo_W.svg" alt="Wikala" width={120} height={32} className="mb-2" />
-            <p className="text-sm text-white/50 mt-3 leading-relaxed">{t.footer.tagline}</p>
-            <p className="text-xs text-[#C8952E] mt-3">{t.footer.made}</p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-4">SELLER PORTAL</p>
-            {t.footer.links.map(l => (
-              <p key={l} className="text-sm text-white/60 mb-2">{l}</p>
-            ))}
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-4">OUR STORE</p>
-            {t.footer.store.map(l => (
-              <p key={l} className="text-sm text-white/60 mb-2">{l}</p>
-            ))}
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-4">CONTACT</p>
-            <p className="text-sm text-white/60 mb-2">{t.footer.contact}</p>
-            <p className="text-sm text-white/60">{t.footer.site}</p>
-          </div>
-        </div>
-        <div className="max-w-6xl mx-auto px-6 mt-8 pt-6 border-t border-white/10 text-center">
-          <p className="text-xs text-white/30">© 2026 Wikala. All rights reserved.</p>
-        </div>
-      </footer>
+      <PublicFooter lang={lang} />
     </div>
   )
 }

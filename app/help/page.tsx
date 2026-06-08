@@ -3,10 +3,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import PublicNavbar from '@/components/ui/PublicNavbar'
+import PublicFooter from '@/components/ui/PublicFooter'
 
 const content = {
   en: {
-    nav: { home: 'Home', login: 'Login', dashboard: 'Dashboard' },
     hero: {
       title: 'Help Center',
       subtitle: 'Everything you need to know about selling on Wikala.',
@@ -139,7 +140,6 @@ const content = {
     }
   },
   ar: {
-    nav: { home: 'الرئيسية', login: 'تسجيل الدخول', dashboard: 'لوحة التحكم' },
     hero: {
       title: 'مركز المساعدة',
       subtitle: 'كل ما تحتاج معرفته عن البيع على وكالة.',
@@ -283,23 +283,7 @@ export default function HelpPage() {
   return (
     <div className="min-h-screen bg-[#FAFAF8]" dir={isAr ? 'rtl' : 'ltr'}>
 
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-[#FAFAF8]/95 backdrop-blur border-b border-[#E0DDDA]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/">
-            <img src="/wikala_Logo.svg" alt="Wikala" className="h-8" />
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">{t.nav.home}</Link>
-            <Link href="/dashboard" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">{t.nav.dashboard}</Link>
-            <button
-              onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-              className="text-xs border border-[#E0DDDA] px-3 py-1.5 rounded-lg text-[#6B6560] hover:bg-[#F5F4F0] transition">
-              {lang === 'en' ? 'عربي' : 'EN'}
-            </button>
-          </div>
-        </div>
-      </nav>
+      <PublicNavbar lang={lang} onLangChange={setLang} />
 
       {/* Hero */}
       <section className="bg-[#1B2A4A] py-16">
@@ -372,6 +356,7 @@ export default function HelpPage() {
           </div>
         </div>
       </div>
+      <PublicFooter lang={lang} />
     </div>
   )
 }

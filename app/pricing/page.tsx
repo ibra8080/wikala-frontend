@@ -4,10 +4,11 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import PublicNavbar from '@/components/ui/PublicNavbar'
+import PublicFooter from '@/components/ui/PublicFooter'
 
 const content = {
   en: {
-    nav: { home: 'Home', login: 'Login', register: 'Start Selling' },
     hero: {
       title: 'Simple, Transparent Pricing',
       subtitle: 'No hidden fees. You only pay after your products are sold.',
@@ -91,7 +92,6 @@ const content = {
     }
   },
   ar: {
-    nav: { home: 'الرئيسية', login: 'تسجيل الدخول', register: 'ابدأ البيع' },
     hero: {
       title: 'تسعير بسيط وشفاف',
       subtitle: 'لا رسوم خفية. تدفع فقط بعد بيع منتجاتك.',
@@ -187,27 +187,7 @@ function PricingContent() {
   return (
     <div className={`min-h-screen bg-[#FAFAF8]`} dir={isAr ? 'rtl' : 'ltr'}>
 
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-[#FAFAF8]/95 backdrop-blur border-b border-[#E0DDDA]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/">
-            <img src="/wikala_Logo.svg" alt="Wikala" className="h-8" />
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">{t.nav.home}</Link>
-            <Link href="/login" className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition">{t.nav.login}</Link>
-            <Link href="/register"
-              className="bg-[#1B2A4A] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#243860] transition">
-              {t.nav.register}
-            </Link>
-            <button
-              onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-              className="text-xs border border-[#E0DDDA] px-3 py-1.5 rounded-lg text-[#6B6560] hover:bg-[#F5F4F0] transition">
-              {lang === 'en' ? 'عربي' : 'EN'}
-            </button>
-          </div>
-        </div>
-      </nav>
+      <PublicNavbar lang={lang} onLangChange={setLang} />
 
       {/* Hero */}
       <section className="max-w-4xl mx-auto px-6 py-20 text-center">
@@ -276,13 +256,7 @@ function PricingContent() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#1B2A4A] border-t border-white/10 py-8">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <img src="/wikala_Logo_W.svg" alt="Wikala" className="h-7 mx-auto mb-3" />
-          <p className="text-xs text-white/30">© 2026 Wikala. All rights reserved.</p>
-        </div>
-      </footer>
+      <PublicFooter lang={lang} />
     </div>
   )
 }
