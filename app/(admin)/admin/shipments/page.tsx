@@ -63,6 +63,8 @@ export default function AdminShipmentsPage() {
   const [filter, setFilter] = useState('submitted')
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [acceptingId, setAcceptingId] = useState<number | null>(null)
+  const [rejectingId, setRejectingId] = useState<number | null>(null)
+  const [rejectNote, setRejectNote] = useState('')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
 
   const [acceptForm, setAcceptForm] = useState({
@@ -101,6 +103,21 @@ export default function AdminShipmentsPage() {
       })
       setAcceptingId(null)
       setAcceptForm({ delivery_date: '', delivery_notes: '' })
+      await fetchRequests()
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleReject = async (id: number) => {
+    setActionLoading(id)
+    try {
+      await api.patch(`/inventory/admin/shipment-requests/${id}/`, {
+        status: 'cancelled',
+        delivery_notes: rejectNote || 'Rejected by admin',
+      })
+      setRejectingId(null)
+      setRejectNote('')
       await fetchRequests()
     } finally {
       setActionLoading(null)
@@ -420,12 +437,32 @@ export default function AdminShipmentsPage() {
                         </div>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setAcceptingId(req.id)}
-                        className="bg-[#C8952E] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#b07d25] transition"
-                      >
-                        Accept Request →
-                      </button>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setAcceptingId(req.id)}
+                          className="bg-[#C8952E] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#b07d25] transition">
+                          Accept Request →
+                        </button>
+                        <button
+                          onClick={() => { setRejectingId(req.id); setRejectNote('') }}
+                          className="bg-red-50 text-red-600 border border-red-200 px-5 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition">
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                    {rejectingId === req.id && (
+                      <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-4">
+                        <textarea value={rejectNote} onChange={e => setRejectNote(e.target.value)}
+                          placeholder="Reason for rejection..." rows={2}
+                          className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none resize-none mb-2" />
+                        <div className="flex gap-2">
+                          <button onClick={() => handleReject(req.id)} disabled={actionLoading === req.id}
+                            className="bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-50">
+                            Confirm Reject
+                          </button>
+                          <button onClick={() => setRejectingId(null)} className="text-xs text-[#6B6560] px-3 py-2">Cancel</button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
