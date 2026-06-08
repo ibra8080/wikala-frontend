@@ -318,7 +318,7 @@ export default function AdminShipmentsPage() {
                         </div>
                         {req.delivery_notes && (
                           <div>
-                            <p className="text-xs text-green-600">Notes</p>
+                            <p className="text-xs text-green-600">Delivery Notes</p>
                             <p className="text-sm font-medium text-green-800">{req.delivery_notes}</p>
                           </div>
                         )}
@@ -389,6 +389,14 @@ export default function AdminShipmentsPage() {
                         </button>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Rejection reason (if cancelled) */}
+                {req.status === 'cancelled' && req.delivery_notes && (
+                  <div className="px-6 py-4 border-t border-[#E0DDDA] bg-red-50">
+                    <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-2">Rejection Reason</p>
+                    <p className="text-sm text-red-800">{req.delivery_notes}</p>
                   </div>
                 )}
 

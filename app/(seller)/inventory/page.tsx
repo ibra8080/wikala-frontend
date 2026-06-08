@@ -237,6 +237,12 @@ export default function InventoryPage() {
                       Cancel
                     </button>
                   )}
+                  {req.status === 'cancelled' && (
+                    <button onClick={() => handleDelete(req.id)}
+                      className="text-sm text-red-500 hover:text-red-700 transition">
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -296,6 +302,13 @@ export default function InventoryPage() {
                           </div>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {req.status === 'cancelled' && req.delivery_notes && (
+                    <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+                      <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">Rejection Reason</p>
+                      <p className="text-sm text-red-800">{req.delivery_notes}</p>
                     </div>
                   )}
 
