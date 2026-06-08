@@ -73,6 +73,7 @@ function MessagesContent() {
   const [showNewConv, setShowNewConv] = useState(false)
   const [showNewIssue, setShowNewIssue] = useState(false)
   const [newConvSubject, setNewConvSubject] = useState('')
+  const [newConvMessage, setNewConvMessage] = useState('')
   const [newIssue, setNewIssue] = useState({
     title: '', description: '', category: 'other', priority: 'medium'
   })
@@ -153,14 +154,18 @@ function MessagesContent() {
   }
 
   const handleCreateConversation = async () => {
-    if (!newConvSubject.trim()) return
+    if (!newConvSubject.trim() || !newConvMessage.trim()) return
     setSending(true)
     try {
       const res = await api.post('/communication/conversations/', {
         subject: newConvSubject
       })
+      await api.post(`/communication/conversations/${res.data.id}/messages/`, {
+        content: newConvMessage
+      })
       setShowNewConv(false)
       setNewConvSubject('')
+      setNewConvMessage('')
       await fetchAll()
       setSelectedConv(res.data)
     } finally {
@@ -227,13 +232,15 @@ function MessagesContent() {
             {showNewConv && (
               <div className="p-4 border-b border-[#E0DDDA] bg-[#F5F4F0]">
                 <input value={newConvSubject} onChange={e => setNewConvSubject(e.target.value)}
-                  placeholder="Subject..." className={inputClass + ' mb-2'} />
+                  placeholder="Subject (short title)..." className={inputClass + ' mb-2'} />
+                <textarea value={newConvMessage} onChange={e => setNewConvMessage(e.target.value)}
+                  placeholder="Your message..." rows={3} className={inputClass + ' mb-2 resize-none'} />
                 <div className="flex gap-2">
-                  <button onClick={handleCreateConversation} disabled={sending}
+                  <button onClick={handleCreateConversation} disabled={sending || !newConvSubject.trim() || !newConvMessage.trim()}
                     className="bg-[#1B2A4A] text-white px-3 py-1.5 rounded-lg text-xs disabled:opacity-50">
-                    Create
+                    Send
                   </button>
-                  <button onClick={() => setShowNewConv(false)}
+                  <button onClick={() => { setShowNewConv(false); setNewConvSubject(''); setNewConvMessage('') }}
                     className="text-xs text-[#6B6560]">Cancel</button>
                 </div>
               </div>
