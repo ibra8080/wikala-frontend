@@ -23,9 +23,12 @@ interface ShipmentRequest {
 
 interface ShipmentItem {
   id: number
-  product: number
+  variant: number
+  variant_sku: string
   product_name: string
   product_code: string
+  color: string
+  size: string
   cartons_count: number
   units_per_carton: number
   total_units: number
@@ -253,7 +256,8 @@ export default function InventoryPage() {
                     <thead>
                       <tr className="border-b border-[#E0DDDA]">
                         <th className="text-left text-xs text-[#6B6560] pb-2">Product</th>
-                        <th className="text-left text-xs text-[#6B6560] pb-2">Code</th>
+                        <th className="text-left text-xs text-[#6B6560] pb-2">SKU</th>
+                        <th className="text-left text-xs text-[#6B6560] pb-2">Variant</th>
                         <th className="text-left text-xs text-[#6B6560] pb-2">Cartons</th>
                         <th className="text-left text-xs text-[#6B6560] pb-2">Units/Carton</th>
                         <th className="text-left text-xs text-[#6B6560] pb-2">Total Units</th>
@@ -263,7 +267,8 @@ export default function InventoryPage() {
                       {req.items.map(item => (
                         <tr key={item.id} className="border-b border-[#E0DDDA] last:border-0">
                           <td className="py-2 text-[#1B2A4A]">{item.product_name}</td>
-                          <td className="py-2 font-mono text-xs text-[#6B6560]">{item.product_code}</td>
+                          <td className="py-2 font-mono text-xs text-[#6B6560]">{item.variant_sku || '—'}</td>
+                          <td className="py-2 text-xs text-[#6B6560]">{item.color}{item.size ? ` / ${item.size}` : ''}</td>
                           <td className="py-2 text-[#1B2A4A]">{item.cartons_count}</td>
                           <td className="py-2 text-[#1B2A4A]">{item.units_per_carton}</td>
                           <td className="py-2 font-semibold text-[#1B2A4A]">{item.total_units}</td>
