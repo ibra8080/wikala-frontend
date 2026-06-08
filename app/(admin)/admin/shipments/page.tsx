@@ -199,6 +199,11 @@ export default function AdminShipmentsPage() {
                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusStyles[req.status] ?? ''}`}>
                   {req.status}
                 </span>
+                {req.status === 'accepted' && req.execution_status && (
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${executionStyles[req.execution_status] ?? ''}`}>
+                    {req.execution_status.replace('_', ' ')}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-4">
