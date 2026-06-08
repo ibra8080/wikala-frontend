@@ -26,6 +26,7 @@ interface Product {
   id: number
   product_code: string
   seller: number
+  seller_name: string
   name_en: string
   name_ar: string
   name_de: string
@@ -247,8 +248,8 @@ export default function AdminProductDetailPage() {
               <p className="font-mono font-medium text-sm text-[#1B2A4A]">{product.product_code || '—'}</p>
             </div>
             <div>
-              <p className="text-xs text-[#6B6560] mb-1">Seller ID</p>
-              <p className="text-sm text-[#1B2A4A]">#{product.seller}</p>
+              <p className="text-xs text-[#6B6560] mb-1">Seller</p>
+              <p className="text-sm text-[#1B2A4A]">{product.seller_name}</p>
             </div>
             <div>
               <p className="text-xs text-[#6B6560] mb-1">Added</p>
