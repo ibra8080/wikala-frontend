@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
@@ -121,6 +121,7 @@ export default function WelcomePage() {
   const [codeInput, setCodeInput] = useState('')
   const [codeLoading, setCodeLoading] = useState(false)
   const [codeResult, setCodeResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [appliedDiscount, setAppliedDiscount] = useState<string | null>(null)
 
   const handleApplyCode = async () => {
     if (!codeInput.trim()) return
@@ -145,6 +146,21 @@ export default function WelcomePage() {
       setCodeLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!_hasHydrated || !user) return
+    const checkAppliedCodes = async () => {
+      try {
+        const res = await api.get('/finance/codes/')
+        if (res.data.length > 0) {
+          const code = res.data[0].code
+          const discountText = code.discount_type === 'percent' ? `${code.value}%` : `€${code.value}`
+          setAppliedDiscount(discountText)
+        }
+      } catch { /* ignore */ }
+    }
+    void checkAppliedCodes()
+  }, [_hasHydrated, user])
 
   return (
     <div className="min-h-screen bg-[#FAFAF8]" dir={isAr ? 'rtl' : 'ltr'}>
@@ -236,7 +252,7 @@ export default function WelcomePage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold text-[#1B2A4A]">{t.payment.title}</h2>
                   <span className="text-2xl font-bold text-[#C8952E]">
-                    {codeResult?.type === 'success'
+                    {codeResult?.type === 'success' || appliedDiscount
                       ? <><s className="text-[#6B6560] text-lg">{t.payment.amount}</s> <span className="text-green-600">€0.00</span></>
                       : t.payment.amount}
                   </span>
@@ -302,6 +318,11 @@ export default function WelcomePage() {
                   {codeResult && (
                     <p className={`text-xs mt-2 ${codeResult.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
                       {codeResult.type === 'success' ? '✓' : '✗'} {codeResult.text}
+                    </p>
+                  )}
+                  {!codeResult && appliedDiscount && (
+                    <p className="text-sm mt-2 text-green-600">
+                      ✓ {lang === 'en' ? `Discount of ${appliedDiscount} already applied to your account.` : `تم تطبيق خصم ${appliedDiscount} على حسابك.`}
                     </p>
                   )}
                 </div>
