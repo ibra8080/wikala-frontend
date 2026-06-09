@@ -1,46 +1,50 @@
-// app/welcome/page.tsx
 'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/auth'
+import api from '@/lib/axios'
 
 const content = {
   en: {
     title: 'Welcome to Wikala!',
     subtitle: 'Your seller account has been created. Here\'s what happens next:',
     steps: [
-      {
-        num: '01',
-        status: 'done',
-        title: 'Account Created ✓',
-        desc: 'Your account is created and under review. Our team will verify your details within 3–5 business days.',
-      },
-      {
-        num: '02',
-        status: 'pending',
-        title: 'Get Approved',
-        desc: 'Once approved, you\'ll receive your unique Seller ID and can start adding products.',
-      },
-      {
-        num: '03',
-        status: 'pending',
-        title: 'Add Your Products',
-        desc: 'Register your products with photos, descriptions, dimensions, and pricing.',
-      },
-      {
-        num: '04',
-        status: 'pending',
-        title: 'Ship to Germany',
-        desc: 'Create a shipment request and send your products to our warehouse in Germany.',
-      },
-      {
-        num: '05',
-        status: 'pending',
-        title: 'Start Earning',
-        desc: 'Your products go live on our store. You receive monthly statements with your earnings.',
-      },
+      { num: '01', status: 'done', title: 'Account Created ✓', desc: 'Your account is created and under review. Our team will verify your details within 3–5 business days.' },
+      { num: '02', status: 'pending', title: 'Complete Registration Fee', desc: 'Choose a payment method below to complete your registration.' },
+      { num: '03', status: 'pending', title: 'Get Approved', desc: 'Once payment is confirmed and details verified, you\'ll receive your unique Seller ID.' },
+      { num: '04', status: 'pending', title: 'Add Your Products', desc: 'Register your products with photos, descriptions, dimensions, and pricing.' },
+      { num: '05', status: 'pending', title: 'Ship to Germany', desc: 'Create a shipment request and send your products to our warehouse in Germany.' },
+      { num: '06', status: 'pending', title: 'Start Earning', desc: 'Your products go live on our store. You receive monthly statements with your earnings.' },
     ],
+    payment: {
+      title: 'Registration Fee',
+      amount: '€39.90',
+      subtitle: 'Choose your preferred payment method to complete registration:',
+      bank: {
+        title: 'Bank Transfer',
+        desc: 'Transfer to our account and send the receipt to our email.',
+        details: [
+          { label: 'Account Name', value: 'Wikala GmbH' },
+          { label: 'IBAN', value: 'DE89 3704 0044 0532 0130 00' },
+          { label: 'Bank', value: 'Commerzbank' },
+          { label: 'BIC', value: 'COBADEFFXXX' },
+        ],
+      },
+      instapay: {
+        title: 'InstaPay',
+        desc: 'Send via InstaPay and share the receipt with us.',
+        number: '+201018417838',
+      },
+      proof: 'After payment, send the receipt to:',
+      email: 'info@wikala.net',
+      proofNote: 'Please include your registered email in the subject line.',
+      code: {
+        title: 'Have a special code?',
+        placeholder: 'Enter code...',
+        apply: 'Apply',
+      },
+    },
     tips: {
       title: 'While You Wait',
       items: [
@@ -58,37 +62,41 @@ const content = {
     title: 'مرحباً بك في وكالة!',
     subtitle: 'تم إنشاء حساب البائع الخاص بك. إليك ما سيحدث بعد ذلك:',
     steps: [
-      {
-        num: '01',
-        status: 'done',
-        title: 'تم إنشاء الحساب ✓',
-        desc: 'تم إنشاء حسابك وهو قيد المراجعة. سيتحقق فريقنا من بياناتك خلال 3–5 أيام عمل.',
-      },
-      {
-        num: '02',
-        status: 'pending',
-        title: 'الحصول على الموافقة',
-        desc: 'بعد الموافقة، ستحصل على معرف البائع الخاص بك ويمكنك البدء في إضافة المنتجات.',
-      },
-      {
-        num: '03',
-        status: 'pending',
-        title: 'أضف منتجاتك',
-        desc: 'سجّل منتجاتك مع الصور والأوصاف والأبعاد والتسعير.',
-      },
-      {
-        num: '04',
-        status: 'pending',
-        title: 'اشحن إلى ألمانيا',
-        desc: 'أنشئ طلب شحن وأرسل منتجاتك إلى مستودعنا في ألمانيا.',
-      },
-      {
-        num: '05',
-        status: 'pending',
-        title: 'ابدأ الربح',
-        desc: 'تظهر منتجاتك على متجرنا. تحصل على كشوف حساب شهرية بأرباحك.',
-      },
+      { num: '01', status: 'done', title: 'تم إنشاء الحساب ✓', desc: 'تم إنشاء حسابك وهو قيد المراجعة. سيتحقق فريقنا من بياناتك خلال 3–5 أيام عمل.' },
+      { num: '02', status: 'pending', title: 'أكمل رسوم التسجيل', desc: 'اختر طريقة الدفع أدناه لإكمال تسجيلك.' },
+      { num: '03', status: 'pending', title: 'الحصول على الموافقة', desc: 'بعد تأكيد الدفع والتحقق من البيانات، ستحصل على معرف البائع الخاص بك.' },
+      { num: '04', status: 'pending', title: 'أضف منتجاتك', desc: 'سجّل منتجاتك مع الصور والأوصاف والأبعاد والتسعير.' },
+      { num: '05', status: 'pending', title: 'اشحن إلى ألمانيا', desc: 'أنشئ طلب شحن وأرسل منتجاتك إلى مستودعنا في ألمانيا.' },
+      { num: '06', status: 'pending', title: 'ابدأ الربح', desc: 'تظهر منتجاتك على متجرنا. تحصل على كشوف حساب شهرية بأرباحك.' },
     ],
+    payment: {
+      title: 'رسوم التسجيل',
+      amount: '٣٩٫٩٠ يورو',
+      subtitle: 'اختر طريقة الدفع المفضلة لإكمال التسجيل:',
+      bank: {
+        title: 'تحويل بنكي',
+        desc: 'حوّل إلى حسابنا وأرسل الإيصال على إيميلنا.',
+        details: [
+          { label: 'اسم الحساب', value: 'Wikala GmbH' },
+          { label: 'IBAN', value: 'DE89 3704 0044 0532 0130 00' },
+          { label: 'البنك', value: 'Commerzbank' },
+          { label: 'BIC', value: 'COBADEFFXXX' },
+        ],
+      },
+      instapay: {
+        title: 'إنستاباي',
+        desc: 'أرسل عبر إنستاباي وشاركنا الإيصال.',
+        number: '+201018417838',
+      },
+      proof: 'بعد الدفع، أرسل الإيصال إلى:',
+      email: 'info@wikala.net',
+      proofNote: 'يرجى كتابة إيميل التسجيل في عنوان الرسالة.',
+      code: {
+        title: 'عندك كود خاص؟',
+        placeholder: 'أدخل الكود...',
+        apply: 'تطبيق',
+      },
+    },
     tips: {
       title: 'في انتظار الموافقة',
       items: [
@@ -110,6 +118,34 @@ export default function WelcomePage() {
   const t = content[lang]
   const isAr = lang === 'ar'
 
+  const [codeInput, setCodeInput] = useState('')
+  const [codeLoading, setCodeLoading] = useState(false)
+  const [codeResult, setCodeResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const handleApplyCode = async () => {
+    if (!codeInput.trim()) return
+    setCodeLoading(true)
+    setCodeResult(null)
+    try {
+      const res = await api.post('/finance/codes/apply/', { code: codeInput.trim() })
+      const { discount_type, value } = res.data
+      const discountText = discount_type === 'percent' ? `${value}%` : `€${value}`
+      setCodeResult({
+        type: 'success',
+        text: lang === 'en'
+          ? `Code applied! You get ${discountText} discount on your registration fee.`
+          : `تم تطبيق الكود! حصلت على خصم ${discountText} على رسوم التسجيل.`
+      })
+    } catch {
+      setCodeResult({
+        type: 'error',
+        text: lang === 'en' ? 'Invalid or expired code.' : 'كود غير صالح أو منتهي الصلاحية.'
+      })
+    } finally {
+      setCodeLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAF8]" dir={isAr ? 'rtl' : 'ltr'}>
 
@@ -119,13 +155,11 @@ export default function WelcomePage() {
           <Link href="/">
             <img src="/wikala_Logo.svg" alt="Wikala" className="h-8" />
           </Link>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-              className="text-xs border border-[#E0DDDA] px-3 py-1.5 rounded-lg text-[#6B6560] hover:bg-[#F5F4F0] transition">
-              {lang === 'en' ? 'عربي' : 'EN'}
-            </button>
-          </div>
+          <button
+            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+            className="text-xs border border-[#E0DDDA] px-3 py-1.5 rounded-lg text-[#6B6560] hover:bg-[#F5F4F0] transition">
+            {lang === 'en' ? 'عربي' : 'EN'}
+          </button>
         </div>
       </nav>
 
@@ -135,9 +169,7 @@ export default function WelcomePage() {
         <div className="text-center mb-12">
           <div className="text-5xl mb-4">🎉</div>
           <h1 className="text-3xl font-bold text-[#1B2A4A] mb-3">{t.title}</h1>
-          {user && (
-            <p className="text-[#C8952E] font-medium mb-2">{user.email}</p>
-          )}
+          {user && <p className="text-[#C8952E] font-medium mb-2">{user.email}</p>}
           <p className="text-[#6B6560]">{t.subtitle}</p>
         </div>
 
@@ -148,9 +180,7 @@ export default function WelcomePage() {
               className={`flex items-start gap-4 px-6 py-5 border-b border-[#E0DDDA] last:border-0
                 ${step.status === 'done' ? 'bg-green-50' : ''}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold
-                ${step.status === 'done'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-[#F5F4F0] text-[#6B6560]'}`}>
+                ${step.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-[#F5F4F0] text-[#6B6560]'}`}>
                 {step.status === 'done' ? '✓' : step.num}
               </div>
               <div>
@@ -161,6 +191,80 @@ export default function WelcomePage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Payment Section */}
+        <div className="bg-white rounded-2xl border-2 border-[#C8952E]/30 overflow-hidden mb-8">
+          <div className="bg-[#C8952E]/5 px-6 py-4 border-b border-[#C8952E]/20">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#1B2A4A]">{t.payment.title}</h2>
+              <span className="text-2xl font-bold text-[#C8952E]">{t.payment.amount}</span>
+            </div>
+            <p className="text-sm text-[#6B6560] mt-1">{t.payment.subtitle}</p>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Bank Transfer */}
+            <div className="bg-[#F5F4F0] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">🏦</span>
+                <h3 className="font-semibold text-[#1B2A4A]">{t.payment.bank.title}</h3>
+              </div>
+              <p className="text-sm text-[#6B6560] mb-3">{t.payment.bank.desc}</p>
+              <div className="space-y-2">
+                {t.payment.bank.details.map((d, i) => (
+                  <div key={i} className="flex gap-3 text-sm">
+                    <span className="text-[#6B6560] w-32 flex-shrink-0">{d.label}</span>
+                    <span className="text-[#1B2A4A] font-mono font-medium">{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* InstaPay */}
+            <div className="bg-[#F5F4F0] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">📱</span>
+                <h3 className="font-semibold text-[#1B2A4A]">{t.payment.instapay.title}</h3>
+              </div>
+              <p className="text-sm text-[#6B6560] mb-2">{t.payment.instapay.desc}</p>
+              <p className="font-mono font-medium text-[#1B2A4A] text-lg">{t.payment.instapay.number}</p>
+            </div>
+
+            {/* Send Proof */}
+            <div className="bg-blue-50 rounded-xl p-5 text-center">
+              <p className="text-sm text-blue-700 mb-2">{t.payment.proof}</p>
+              <a href={`mailto:${t.payment.email}`}
+                className="text-lg font-bold text-blue-800 hover:underline">
+                {t.payment.email}
+              </a>
+              <p className="text-xs text-blue-600 mt-2">{t.payment.proofNote}</p>
+            </div>
+
+            {/* Discount Code */}
+            <div className="border-t border-[#E0DDDA] pt-5">
+              <h3 className="font-semibold text-[#1B2A4A] mb-3">{t.payment.code.title}</h3>
+              <div className="flex gap-3">
+                <input
+                  value={codeInput}
+                  onChange={e => setCodeInput(e.target.value.toUpperCase())}
+                  placeholder={t.payment.code.placeholder}
+                  className="flex-1 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-[#C8952E] transition uppercase"
+                />
+                <button
+                  onClick={handleApplyCode}
+                  disabled={codeLoading || !codeInput.trim()}
+                  className="bg-[#C8952E] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-40 transition">
+                  {codeLoading ? '...' : t.payment.code.apply}
+                </button>
+              </div>
+              {codeResult && (
+                <p className={`text-sm mt-2 ${codeResult.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                  {codeResult.type === 'success' ? '✓' : '✗'} {codeResult.text}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Tips */}
