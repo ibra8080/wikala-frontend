@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import api from '@/lib/axios'
+import { useAuthStore } from '@/store/auth'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const setAuth = useAuthStore((s) => s.setAuth)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
@@ -48,8 +50,11 @@ export default function RegisterPage() {
       const loginRes = await api.post('/users/login/', {
         email: form.email, password: form.password,
       })
-      localStorage.setItem('access_token', loginRes.data.access)
-      localStorage.setItem('refresh_token', loginRes.data.refresh)
+      const { access, refresh } = loginRes.data
+      const meRes = await api.get('/users/me/', {
+        headers: { Authorization: `Bearer ${access}` }
+      })
+      setAuth(meRes.data, access, refresh)
       await api.post('/sellers/register/', {
         full_name: form.full_name, business_name: form.business_name,
         phone: form.phone, whatsapp: form.whatsapp,
