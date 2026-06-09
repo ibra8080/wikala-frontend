@@ -51,9 +51,9 @@ export default function RegisterPage() {
         email: form.email, password: form.password,
       })
       const { access, refresh } = loginRes.data
-      const meRes = await api.get('/users/me/', {
-        headers: { Authorization: `Bearer ${access}` }
-      })
+      localStorage.setItem('access_token', access)
+      localStorage.setItem('refresh_token', refresh)
+      const meRes = await api.get('/users/me/')
       setAuth(meRes.data, access, refresh)
       await api.post('/sellers/register/', {
         full_name: form.full_name, business_name: form.business_name,

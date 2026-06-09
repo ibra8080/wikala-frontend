@@ -163,139 +163,152 @@ export default function WelcomePage() {
         </div>
       </nav>
 
-      <div className="max-w-3xl mx-auto px-6 py-16">
+      <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="text-5xl mb-4">🎉</div>
-          <h1 className="text-3xl font-bold text-[#1B2A4A] mb-3">{t.title}</h1>
-          {user && <p className="text-[#C8952E] font-medium mb-2">{user.email}</p>}
-          <p className="text-[#6B6560]">{t.subtitle}</p>
+        <div className="text-center mb-8">
+          <div className="text-4xl mb-3">🎉</div>
+          <h1 className="text-2xl font-bold text-[#1B2A4A] mb-2">{t.title}</h1>
+          {user && <p className="text-[#C8952E] font-medium mb-1">{user.email}</p>}
+          <p className="text-sm text-[#6B6560]">{t.subtitle}</p>
         </div>
 
-        {/* Steps */}
-        <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden mb-8">
-          {t.steps.map((step, i) => (
-            <div key={i}
-              className={`flex items-start gap-4 px-6 py-5 border-b border-[#E0DDDA] last:border-0
-                ${step.status === 'done' ? 'bg-green-50' : ''}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold
-                ${step.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-[#F5F4F0] text-[#6B6560]'}`}>
-                {step.status === 'done' ? '✓' : step.num}
-              </div>
-              <div>
-                <p className={`font-semibold mb-1 ${step.status === 'done' ? 'text-green-700' : 'text-[#1B2A4A]'}`}>
-                  {step.title}
-                </p>
-                <p className="text-sm text-[#6B6560] leading-relaxed">{step.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <div className="grid grid-cols-[1fr_380px] gap-6 items-start">
 
-        {/* Payment Section */}
-        <div className="bg-white rounded-2xl border-2 border-[#C8952E]/30 overflow-hidden mb-8">
-          <div className="bg-[#C8952E]/5 px-6 py-4 border-b border-[#C8952E]/20">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-[#1B2A4A]">{t.payment.title}</h2>
-              <span className="text-2xl font-bold text-[#C8952E]">{t.payment.amount}</span>
-            </div>
-            <p className="text-sm text-[#6B6560] mt-1">{t.payment.subtitle}</p>
-          </div>
-
-          <div className="p-6 space-y-6">
-            {/* Bank Transfer */}
-            <div className="bg-[#F5F4F0] rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">🏦</span>
-                <h3 className="font-semibold text-[#1B2A4A]">{t.payment.bank.title}</h3>
-              </div>
-              <p className="text-sm text-[#6B6560] mb-3">{t.payment.bank.desc}</p>
-              <div className="space-y-2">
-                {t.payment.bank.details.map((d, i) => (
-                  <div key={i} className="flex gap-3 text-sm">
-                    <span className="text-[#6B6560] w-32 flex-shrink-0">{d.label}</span>
-                    <span className="text-[#1B2A4A] font-mono font-medium">{d.value}</span>
+          {/* Left: Steps + Tips + CTAs */}
+          <div>
+            {/* Steps */}
+            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden mb-6">
+              {t.steps.map((step, i) => (
+                <div key={i}
+                  className={`flex items-start gap-4 px-6 py-4 border-b border-[#E0DDDA] last:border-0
+                    ${step.status === 'done' ? 'bg-green-50' : ''}`}>
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold
+                    ${step.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-[#F5F4F0] text-[#6B6560]'}`}>
+                    {step.status === 'done' ? '✓' : step.num}
                   </div>
+                  <div>
+                    <p className={`font-semibold mb-0.5 ${step.status === 'done' ? 'text-green-700' : 'text-[#1B2A4A]'}`}>
+                      {step.title}
+                    </p>
+                    <p className="text-sm text-[#6B6560] leading-relaxed">{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tips */}
+            <div className="mb-6">
+              <h2 className="font-semibold text-[#1B2A4A] mb-3">{t.tips.title}</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {t.tips.items.map((tip, i) => (
+                  <Link key={i} href={tip.href}
+                    className="bg-white rounded-2xl border border-[#E0DDDA] p-4 hover:border-[#C8952E] transition group">
+                    <div className="text-2xl mb-2">{tip.icon}</div>
+                    <p className="font-medium text-[#1B2A4A] text-sm mb-1 group-hover:text-[#C8952E] transition">{tip.title}</p>
+                    <p className="text-xs text-[#6B6560]">{tip.desc}</p>
+                  </Link>
                 ))}
               </div>
             </div>
 
-            {/* InstaPay */}
-            <div className="bg-[#F5F4F0] rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">📱</span>
-                <h3 className="font-semibold text-[#1B2A4A]">{t.payment.instapay.title}</h3>
-              </div>
-              <p className="text-sm text-[#6B6560] mb-2">{t.payment.instapay.desc}</p>
-              <p className="font-mono font-medium text-[#1B2A4A] text-lg">{t.payment.instapay.number}</p>
-            </div>
-
-            {/* Send Proof */}
-            <div className="bg-blue-50 rounded-xl p-5 text-center">
-              <p className="text-sm text-blue-700 mb-2">{t.payment.proof}</p>
-              <a href={`mailto:${t.payment.email}`}
-                className="text-lg font-bold text-blue-800 hover:underline">
-                {t.payment.email}
-              </a>
-              <p className="text-xs text-blue-600 mt-2">{t.payment.proofNote}</p>
-            </div>
-
-            {/* Discount Code */}
-            <div className="border-t border-[#E0DDDA] pt-5">
-              <h3 className="font-semibold text-[#1B2A4A] mb-3">{t.payment.code.title}</h3>
-              <div className="flex gap-3">
-                <input
-                  value={codeInput}
-                  onChange={e => setCodeInput(e.target.value.toUpperCase())}
-                  placeholder={t.payment.code.placeholder}
-                  className="flex-1 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-[#C8952E] transition uppercase"
-                />
-                <button
-                  onClick={handleApplyCode}
-                  disabled={codeLoading || !codeInput.trim()}
-                  className="bg-[#C8952E] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-40 transition">
-                  {codeLoading ? '...' : t.payment.code.apply}
-                </button>
-              </div>
-              {codeResult && (
-                <p className={`text-sm mt-2 ${codeResult.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
-                  {codeResult.type === 'success' ? '✓' : '✗'} {codeResult.text}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Tips */}
-        <div className="mb-10">
-          <h2 className="font-semibold text-[#1B2A4A] mb-4">{t.tips.title}</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {t.tips.items.map((tip, i) => (
-              <Link key={i} href={tip.href}
-                className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:border-[#C8952E] transition group">
-                <div className="text-2xl mb-2">{tip.icon}</div>
-                <p className="font-medium text-[#1B2A4A] text-sm mb-1 group-hover:text-[#C8952E] transition">{tip.title}</p>
-                <p className="text-xs text-[#6B6560]">{tip.desc}</p>
+            {/* CTAs */}
+            <div className="flex gap-3 flex-wrap">
+              <Link href="/dashboard"
+                className="bg-[#1B2A4A] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[#243860] transition">
+                {t.cta}
               </Link>
-            ))}
+              <Link href="/pricing"
+                className="border border-[#E0DDDA] text-[#1B2A4A] px-6 py-3 rounded-xl text-sm font-medium hover:bg-[#F5F4F0] transition">
+                {t.pricing}
+              </Link>
+              <Link href="/help"
+                className="border border-[#E0DDDA] text-[#1B2A4A] px-6 py-3 rounded-xl text-sm font-medium hover:bg-[#F5F4F0] transition">
+                {t.help}
+              </Link>
+            </div>
           </div>
-        </div>
 
-        {/* CTAs */}
-        <div className="flex gap-3 flex-wrap">
-          <Link href="/dashboard"
-            className="bg-[#1B2A4A] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[#243860] transition">
-            {t.cta}
-          </Link>
-          <Link href="/pricing"
-            className="border border-[#E0DDDA] text-[#1B2A4A] px-6 py-3 rounded-xl text-sm font-medium hover:bg-[#F5F4F0] transition">
-            {t.pricing}
-          </Link>
-          <Link href="/help"
-            className="border border-[#E0DDDA] text-[#1B2A4A] px-6 py-3 rounded-xl text-sm font-medium hover:bg-[#F5F4F0] transition">
-            {t.help}
-          </Link>
+          {/* Right: Payment — sticky */}
+          <div className="sticky top-4">
+            <div className="bg-white rounded-2xl border-2 border-[#C8952E]/30 overflow-hidden">
+              <div className="bg-[#C8952E]/5 px-6 py-4 border-b border-[#C8952E]/20">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-[#1B2A4A]">{t.payment.title}</h2>
+                  <span className="text-2xl font-bold text-[#C8952E]">
+                    {codeResult?.type === 'success'
+                      ? <><s className="text-[#6B6560] text-lg">{t.payment.amount}</s> <span className="text-green-600">€0.00</span></>
+                      : t.payment.amount}
+                  </span>
+                </div>
+                <p className="text-sm text-[#6B6560] mt-1">{t.payment.subtitle}</p>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Bank Transfer */}
+                <div className="bg-[#F5F4F0] rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🏦</span>
+                    <h3 className="font-semibold text-[#1B2A4A] text-sm">{t.payment.bank.title}</h3>
+                  </div>
+                  <p className="text-xs text-[#6B6560] mb-2">{t.payment.bank.desc}</p>
+                  <div className="space-y-1.5">
+                    {t.payment.bank.details.map((d, i) => (
+                      <div key={i} className="flex gap-3 text-xs">
+                        <span className="text-[#6B6560] w-28 flex-shrink-0">{d.label}</span>
+                        <span className="text-[#1B2A4A] font-mono font-medium">{d.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* InstaPay */}
+                <div className="bg-[#F5F4F0] rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">📱</span>
+                    <h3 className="font-semibold text-[#1B2A4A] text-sm">{t.payment.instapay.title}</h3>
+                  </div>
+                  <p className="text-xs text-[#6B6560] mb-1">{t.payment.instapay.desc}</p>
+                  <p className="font-mono font-medium text-[#1B2A4A]">{t.payment.instapay.number}</p>
+                </div>
+
+                {/* Send Proof */}
+                <div className="bg-blue-50 rounded-xl p-4 text-center">
+                  <p className="text-xs text-blue-700 mb-1">{t.payment.proof}</p>
+                  <a href={`mailto:${t.payment.email}`}
+                    className="font-bold text-blue-800 hover:underline text-sm">
+                    {t.payment.email}
+                  </a>
+                  <p className="text-xs text-blue-600 mt-1">{t.payment.proofNote}</p>
+                </div>
+
+                {/* Discount Code */}
+                <div className="border-t border-[#E0DDDA] pt-4">
+                  <h3 className="font-semibold text-[#1B2A4A] mb-2 text-sm">{t.payment.code.title}</h3>
+                  <div className="flex gap-2">
+                    <input
+                      value={codeInput}
+                      onChange={e => setCodeInput(e.target.value.toUpperCase())}
+                      placeholder={t.payment.code.placeholder}
+                      className="flex-1 border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#C8952E] transition uppercase"
+                    />
+                    <button
+                      onClick={handleApplyCode}
+                      disabled={codeLoading || !codeInput.trim()}
+                      className="bg-[#C8952E] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-40 transition">
+                      {codeLoading ? '...' : t.payment.code.apply}
+                    </button>
+                  </div>
+                  {codeResult && (
+                    <p className={`text-xs mt-2 ${codeResult.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                      {codeResult.type === 'success' ? '✓' : '✗'} {codeResult.text}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
