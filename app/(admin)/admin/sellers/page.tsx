@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
@@ -57,12 +58,31 @@ export default function AdminSellersPage() {
     }
   }
 
+  const handleSuspend = async (sellerId: number) => {
+    if (!confirm('Suspend this seller?')) return
+    setActionLoading(sellerId)
+    try {
+      await api.patch(`/sellers/admin/${sellerId}/`, { status: 'suspended' })
+      await fetchSellers()
+    } finally { setActionLoading(null) }
+  }
+
+  const handleDelete = async (sellerId: number) => {
+    if (!confirm('Permanently delete this seller and all their data?')) return
+    setActionLoading(sellerId)
+    try {
+      await api.delete(`/sellers/admin/${sellerId}/`)
+      await fetchSellers()
+    } finally { setActionLoading(null) }
+  }
+
   const filtered = sellers.filter(s => filter === 'all' ? true : s.status === filter)
 
   const tabs = [
     { key: 'pending', label: 'Pending' },
     { key: 'approved', label: 'Approved' },
     { key: 'rejected', label: 'Rejected' },
+    { key: 'suspended', label: 'Suspended' },
     { key: 'all', label: 'All' },
   ]
 
@@ -136,24 +156,40 @@ export default function AdminSellersPage() {
                   </p>
                 </td>
                 <td className="px-6 py-4">
-                  {seller.status === 'pending' && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleAction(seller.id, 'approved')}
-                        disabled={actionLoading === seller.id}
-                        className="bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-100 transition disabled:opacity-50"
-                      >
-                        Approve
+                  <div className="flex gap-2 flex-wrap justify-end">
+                    <Link href={`/admin/sellers/${seller.id}`}
+                      className="text-xs text-[#1B2A4A] border border-[#E0DDDA] px-3 py-1.5 rounded-lg hover:border-[#1B2A4A] transition">
+                      View
+                    </Link>
+                    {seller.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleAction(seller.id, 'approved')} disabled={actionLoading === seller.id}
+                          className="bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-100 transition disabled:opacity-50">
+                          Approve
+                        </button>
+                        <button onClick={() => handleAction(seller.id, 'rejected')} disabled={actionLoading === seller.id}
+                          className="bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-100 transition disabled:opacity-50">
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {seller.status === 'approved' && (
+                      <button onClick={() => handleSuspend(seller.id)} disabled={actionLoading === seller.id}
+                        className="bg-gray-50 text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-100 transition disabled:opacity-50">
+                        Suspend
                       </button>
-                      <button
-                        onClick={() => handleAction(seller.id, 'rejected')}
-                        disabled={actionLoading === seller.id}
-                        className="bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-100 transition disabled:opacity-50"
-                      >
-                        Reject
+                    )}
+                    {seller.status === 'suspended' && (
+                      <button onClick={() => handleAction(seller.id, 'approved')} disabled={actionLoading === seller.id}
+                        className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-100 transition disabled:opacity-50">
+                        Reactivate
                       </button>
-                    </div>
-                  )}
+                    )}
+                    <button onClick={() => handleDelete(seller.id)} disabled={actionLoading === seller.id}
+                      className="text-xs text-red-400 hover:text-red-600 px-2 py-1.5">
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
