@@ -329,7 +329,7 @@ export default function AdminStatementsPage() {
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <p className="text-xs text-[#6B6560]">Net</p>
-                  <p className="font-semibold text-green-600">{fmt(stmt.net_amount)}</p>
+                  <p className={`font-semibold ${parseFloat(stmt.net_amount) >= 0 ? 'text-green-600' : 'text-red-500'}`}>{fmt(stmt.net_amount)}</p>
                 </div>
                 {stmt.status === 'draft' && (
                   <button onClick={() => handleSend(stmt.id)} disabled={actionLoading === stmt.id}
@@ -405,7 +405,7 @@ export default function AdminStatementsPage() {
                       </div>
                     )}
                   </div>
-                  <div><p className="text-xs text-[#6B6560]">Net Amount</p><p className="font-bold text-green-600 text-lg">{fmt(stmt.net_amount)}</p></div>
+                  <div><p className="text-xs text-[#6B6560]">Net Amount</p><p className={`font-bold text-lg ${parseFloat(stmt.net_amount) >= 0 ? 'text-green-600' : 'text-red-500'}`}>{fmt(stmt.net_amount)}</p></div>
                 </div>
 
                 {/* Line Items */}

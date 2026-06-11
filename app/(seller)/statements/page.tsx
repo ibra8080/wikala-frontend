@@ -446,7 +446,7 @@ export default function StatementsPage() {
                       'bg-amber-50 text-amber-700 border-amber-200'}`}>
                     {stmt.status}
                   </span>
-                  <p className="font-bold text-green-600">{fmt(parseFloat(stmt.net_amount))}</p>
+                  <p className={`font-bold ${parseFloat(stmt.net_amount) >= 0 ? 'text-green-600' : 'text-red-500'}`}>{fmt(parseFloat(stmt.net_amount))}</p>
                   {stmt.status === 'sent' && (
                     <>
                       <button onClick={() => handleAccept(stmt.id)} disabled={stmtAction === stmt.id}
@@ -523,7 +523,7 @@ export default function StatementsPage() {
                       <p className="font-semibold text-green-600">-€{stmt.overall_discount}</p>
                       {stmt.discount_description && <p className="text-xs text-[#6B6560] italic">{stmt.discount_description}</p>}
                     </div>
-                    <div><p className="text-xs text-[#6B6560]">Net Amount</p><p className="font-bold text-green-600 text-lg">€{stmt.net_amount}</p></div>
+                    <div><p className="text-xs text-[#6B6560]">Net Amount</p><p className={`font-bold text-lg ${parseFloat(stmt.net_amount) >= 0 ? 'text-green-600' : 'text-red-500'}`}>€{stmt.net_amount}</p></div>
                   </div>
 
                   {/* Line Items */}
