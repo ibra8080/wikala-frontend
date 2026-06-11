@@ -150,6 +150,10 @@ export default function AdminStatementsPage() {
   }
 
   const handleSend = async (id: number) => {
+    const confirmed = window.confirm(
+      'Are you sure you want to send this statement?\n\nOnce sent, you will not be able to edit the statement or its line items.'
+    )
+    if (!confirmed) return
     setActionLoading(id)
     try {
       await api.post(`/finance/admin/statements/${id}/send/`)
