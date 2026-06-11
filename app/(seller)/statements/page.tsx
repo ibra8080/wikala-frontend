@@ -28,14 +28,38 @@ interface InventoryItem {
   arrived_germany_at: string | null
 }
 
-interface Statement {
+interface LineItem {
+  id: number
+  item_type: string
+  description: string
+  amount: string
+  discount: string
+}
+
+interface Dispute {
+  id: number
+  seller_message: string
+  admin_response: string
+  status: string
+  created_at: string
+}
+
+interface FullStatement {
   id: number
   period_start: string
   period_end: string
   total_sales: string
+  total_fees: string
+  overall_discount: string
   net_amount: string
   status: string
+  sent_at: string | null
+  auto_finalize_date: string | null
+  paid_at: string | null
   created_at: string
+  line_items: LineItem[]
+  disputes: Dispute[]
+  has_dispute: boolean
 }
 
 interface WebService {
@@ -98,7 +122,7 @@ export default function StatementsPage() {
   const { user, _hasHydrated } = useAuthStore()
   const [products, setProducts] = useState<Product[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
-  const [statements, setStatements] = useState<Statement[]>([])
+  const [statements, setStatements] = useState<FullStatement[]>([])
   const [charges, setCharges] = useState<WebServiceCharge[]>([])
   const [myCodes, setMyCodes] = useState<SellerDiscountCode[]>([])
   const [availableServices, setAvailableServices] = useState<WebService[]>([])
@@ -109,6 +133,11 @@ export default function StatementsPage() {
   const [codeMessage, setCodeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'statements' | 'services'>('overview')
+  const [expandedStmt, setExpandedStmt] = useState<number | null>(null)
+  const [disputingStmt, setDisputingStmt] = useState<number | null>(null)
+  const [disputeMsg, setDisputeMsg] = useState('')
+  const [disputeItemId, setDisputeItemId] = useState<string>('')
+  const [stmtAction, setStmtAction] = useState<number | null>(null)
 
   const fetchAll = useCallback(async () => {
     try {
@@ -123,7 +152,7 @@ export default function StatementsPage() {
       setProducts(prodRes.data)
       setInventory(invRes.data)
       setStatements(stmtRes.data.filter(
-        (s: { status: string }) => s.status === 'sent' || s.status === 'paid'
+        (s: { status: string }) => ['sent', 'accepted', 'disputed', 'paid'].includes(s.status)
       ))
       setCharges(chargesRes.data)
       setMyCodes(codesRes.data)
@@ -162,6 +191,29 @@ export default function StatementsPage() {
     } finally {
       setCodeLoading(false)
     }
+  }
+
+  const handleAccept = async (stmtId: number) => {
+    setStmtAction(stmtId)
+    try {
+      await api.post(`/finance/statements/${stmtId}/accept/`)
+      await fetchAll()
+    } finally { setStmtAction(null) }
+  }
+
+  const handleDispute = async (stmtId: number) => {
+    if (!disputeMsg.trim()) return
+    setStmtAction(stmtId)
+    try {
+      await api.post(`/finance/statements/${stmtId}/dispute/`, {
+        seller_message: disputeMsg,
+        line_item_id: disputeItemId || undefined,
+      })
+      setDisputingStmt(null)
+      setDisputeMsg('')
+      setDisputeItemId('')
+      await fetchAll()
+    } finally { setStmtAction(null) }
   }
 
   useEffect(() => {
@@ -355,63 +407,142 @@ export default function StatementsPage() {
 
       {/* Tab: Monthly Statements */}
       {activeTab === 'statements' && (
-        <div>
+        <div className="space-y-4">
           {statements.length === 0 ? (
             <div className="bg-white rounded-2xl border border-[#E0DDDA] p-16 text-center">
               <p className="text-4xl mb-4">🧾</p>
               <p className="text-lg font-semibold text-[#1B2A4A] mb-2">No statements yet</p>
-              <p className="text-sm text-[#6B6560]">
-                Monthly statements are issued by Wikala&apos;s accounting team at the end of each month.
-              </p>
+              <p className="text-sm text-[#6B6560]">Monthly statements are issued by Wikala at the end of each month.</p>
             </div>
-          ) : (
-            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
-                    <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Period</th>
-                    <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Total Sales</th>
-                    <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Net Amount</th>
-                    <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Status</th>
-                    <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Date</th>
-                    <th className="px-6 py-4" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {statements.map(stmt => (
-                    <tr key={stmt.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
-                      <td className="px-6 py-4">
-                        <p className="text-[#1B2A4A] font-medium">
-                          {new Date(stmt.period_start).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
-                        </p>
-                        <p className="text-xs text-[#6B6560]">
-                          {new Date(stmt.period_start).toLocaleDateString('en-GB')} — {new Date(stmt.period_end).toLocaleDateString('en-GB')}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4 font-medium text-[#1B2A4A]">€{stmt.total_sales}</td>
-                      <td className="px-6 py-4 font-semibold text-green-600">€{stmt.net_amount}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border
-                          ${stmt.status === 'paid' ? 'bg-green-50 text-green-700 border-green-200' :
-                            stmt.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                            'bg-gray-100 text-gray-600'}`}>
-                          {stmt.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-[#6B6560]">
-                        {new Date(stmt.created_at).toLocaleDateString('en-GB')}
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="text-sm text-[#C8952E] hover:underline">
-                          Download PDF
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          ) : statements.map(stmt => (
+            <div key={stmt.id} className={`bg-white rounded-2xl border overflow-hidden ${stmt.has_dispute ? 'border-red-300' : 'border-[#E0DDDA]'}`}>
+              {/* Header */}
+              <div className="px-6 py-4 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-[#1B2A4A]">
+                    {new Date(stmt.period_start).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                  </p>
+                  <p className="text-xs text-[#6B6560]">
+                    {new Date(stmt.period_start).toLocaleDateString('en-GB')} — {new Date(stmt.period_end).toLocaleDateString('en-GB')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border
+                    ${stmt.status === 'paid' ? 'bg-green-50 text-green-700 border-green-200' :
+                      stmt.status === 'accepted' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      stmt.status === 'disputed' ? 'bg-red-50 text-red-700 border-red-200' :
+                      'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                    {stmt.status}
+                  </span>
+                  <p className="font-bold text-green-600">{fmt(parseFloat(stmt.net_amount))}</p>
+                  {stmt.status === 'sent' && (
+                    <>
+                      <button onClick={() => handleAccept(stmt.id)} disabled={stmtAction === stmt.id}
+                        className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-700 disabled:opacity-50">
+                        Accept
+                      </button>
+                      <button onClick={() => setDisputingStmt(stmt.id)}
+                        className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-100">
+                        Dispute
+                      </button>
+                    </>
+                  )}
+                  <button onClick={() => setExpandedStmt(expandedStmt === stmt.id ? null : stmt.id)}
+                    className="text-sm text-[#C8952E] hover:underline">
+                    {expandedStmt === stmt.id ? 'Hide ↑' : 'View ↓'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Dispute Form */}
+              {disputingStmt === stmt.id && (
+                <div className="px-6 pb-4 border-t border-[#E0DDDA] pt-4 bg-red-50">
+                  <p className="text-sm font-medium text-red-700 mb-2">Submit Dispute</p>
+                  <select value={disputeItemId} onChange={e => setDisputeItemId(e.target.value)}
+                    className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none">
+                    <option value="">Dispute entire statement</option>
+                    {stmt.line_items.map(item => (
+                      <option key={item.id} value={item.id}>{item.description} — €{item.amount}</option>
+                    ))}
+                  </select>
+                  <textarea value={disputeMsg} onChange={e => setDisputeMsg(e.target.value)}
+                    placeholder="Explain your dispute..." rows={3}
+                    className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none resize-none mb-2" />
+                  <div className="flex gap-2">
+                    <button onClick={() => handleDispute(stmt.id)} disabled={!disputeMsg.trim() || stmtAction === stmt.id}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-50">
+                      Submit Dispute
+                    </button>
+                    <button onClick={() => setDisputingStmt(null)} className="text-xs text-[#6B6560] px-3 py-2">Cancel</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Expanded */}
+              {expandedStmt === stmt.id && (
+                <div className="border-t border-[#E0DDDA]">
+                  {/* Summary */}
+                  <div className="px-6 py-4 bg-[#F5F4F0] grid grid-cols-4 gap-4">
+                    <div><p className="text-xs text-[#6B6560]">Total Sales</p><p className="font-semibold text-[#1B2A4A]">€{stmt.total_sales}</p></div>
+                    <div><p className="text-xs text-[#6B6560]">Total Fees</p><p className="font-semibold text-[#1B2A4A]">€{stmt.total_fees}</p></div>
+                    <div><p className="text-xs text-[#6B6560]">Discount</p><p className="font-semibold text-green-600">-€{stmt.overall_discount}</p></div>
+                    <div><p className="text-xs text-[#6B6560]">Net Amount</p><p className="font-bold text-green-600 text-lg">€{stmt.net_amount}</p></div>
+                  </div>
+
+                  {/* Line Items */}
+                  <div className="px-6 py-4">
+                    <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Statement Details</p>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#E0DDDA]">
+                          <th className="text-left text-xs text-[#6B6560] pb-2">Description</th>
+                          <th className="text-right text-xs text-[#6B6560] pb-2">Amount</th>
+                          <th className="text-right text-xs text-[#6B6560] pb-2">Discount</th>
+                          <th className="text-right text-xs text-[#6B6560] pb-2">Net</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stmt.line_items.map(item => (
+                          <tr key={item.id} className="border-b border-[#E0DDDA] last:border-0">
+                            <td className="py-2 text-[#1B2A4A]">{item.description}</td>
+                            <td className="py-2 text-right text-[#1B2A4A]">€{item.amount}</td>
+                            <td className="py-2 text-right text-green-600">{parseFloat(item.discount) > 0 ? `-€${item.discount}` : '—'}</td>
+                            <td className="py-2 text-right font-semibold text-[#1B2A4A]">
+                              €{(parseFloat(item.amount) - parseFloat(item.discount)).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Disputes */}
+                  {stmt.disputes.length > 0 && (
+                    <div className="px-6 py-4 border-t border-[#E0DDDA]">
+                      {stmt.disputes.map(d => (
+                        <div key={d.id} className="bg-red-50 rounded-xl p-4 mb-2">
+                          <p className="text-xs text-red-500 mb-1">{new Date(d.created_at).toLocaleDateString('en-GB')} · {d.status}</p>
+                          <p className="text-sm text-red-800 mb-1"><span className="font-medium">Your dispute:</span> {d.seller_message}</p>
+                          {d.admin_response && (
+                            <p className="text-sm text-[#1B2A4A]"><span className="font-medium">Wikala response:</span> {d.admin_response}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Auto-finalize notice */}
+                  {stmt.auto_finalize_date && stmt.status === 'sent' && (
+                    <div className="px-6 py-3 bg-amber-50 border-t border-amber-100">
+                      <p className="text-xs text-amber-700">
+                        ⚠️ This statement will be automatically finalized on {new Date(stmt.auto_finalize_date).toLocaleDateString('en-GB')} if no dispute is raised.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
       )}
 
