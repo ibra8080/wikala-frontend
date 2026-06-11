@@ -36,6 +36,7 @@ interface Statement {
   total_sales: string
   total_fees: string
   overall_discount: string
+  discount_description: string
   net_amount: string
   status: string
   admin_notes: string
@@ -46,6 +47,17 @@ interface Statement {
   line_items: LineItem[]
   disputes: Dispute[]
   has_dispute: boolean
+  seller_business_name: string
+  seller_legal_name: string
+  seller_full_name: string
+  seller_email: string
+  seller_phone: string
+  seller_legal_address: string
+  seller_city: string
+  seller_country: string
+  seller_tax_id: string
+  seller_commercial_register: string
+  seller_id_code: string
 }
 
 const statusStyles: Record<string, string> = {
@@ -54,12 +66,6 @@ const statusStyles: Record<string, string> = {
   accepted: 'bg-blue-50 text-blue-700 border-blue-200',
   disputed: 'bg-red-50 text-red-700 border-red-200',
   paid:     'bg-green-50 text-green-700 border-green-200',
-}
-
-const itemTypeLabels: Record<string, string> = {
-  sale: 'Sales', commission: 'Commission', storage: 'Storage',
-  shipping: 'Shipping', pick_pack: 'Pick & Pack',
-  web_service: 'Web Service', custom: 'Custom',
 }
 
 const fmt = (n: string | number) => `€${parseFloat(String(n)).toFixed(2)}`
@@ -92,6 +98,11 @@ export default function AdminStatementsPage() {
   // Overall discount
   const [editingDiscount, setEditingDiscount] = useState<number | null>(null)
   const [discountValue, setDiscountValue] = useState('0')
+  const [discountDesc, setDiscountDesc] = useState('')
+
+  // Admin notes
+  const [editingNotes, setEditingNotes] = useState<number | null>(null)
+  const [notesValue, setNotesValue] = useState('')
 
   // Dispute resolve
   const [resolvingDispute, setResolvingDispute] = useState<{ stmtId: number; disputeId: number } | null>(null)
@@ -184,10 +195,18 @@ export default function AdminStatementsPage() {
 
   const handleUpdateDiscount = async (stmtId: number) => {
     try {
-      await api.patch(`/finance/admin/statements/${stmtId}/`, { overall_discount: discountValue })
+      await api.patch(`/finance/admin/statements/${stmtId}/`, { overall_discount: discountValue, discount_description: discountDesc })
       setEditingDiscount(null)
       await fetchAll()
     } catch { alert('Failed to update discount.') }
+  }
+
+  const handleUpdateNotes = async (stmtId: number) => {
+    try {
+      await api.patch(`/finance/admin/statements/${stmtId}/`, { admin_notes: notesValue })
+      setEditingNotes(null)
+      await fetchAll()
+    } catch { alert('Failed to update notes.') }
   }
 
   const handleResolveDispute = async (stmtId: number, disputeId: number, newStatus: string) => {
@@ -329,6 +348,27 @@ export default function AdminStatementsPage() {
             {expandedId === stmt.id && (
               <div className="border-t border-[#E0DDDA]">
 
+                {/* Seller Legal Info */}
+                <div className="px-6 py-4 border-b border-[#E0DDDA]">
+                  <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Seller Legal Info</p>
+                  <div className="grid grid-cols-3 gap-x-8 gap-y-2 text-sm">
+                    <div><span className="text-xs text-[#6B6560]">Legal Name: </span><span className="text-[#1B2A4A]">{stmt.seller_legal_name}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Business Name: </span><span className="text-[#1B2A4A]">{stmt.seller_business_name}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Full Name: </span><span className="text-[#1B2A4A]">{stmt.seller_full_name}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Address: </span><span className="text-[#1B2A4A]">{stmt.seller_legal_address}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">City: </span><span className="text-[#1B2A4A]">{stmt.seller_city}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Country: </span><span className="text-[#1B2A4A]">{stmt.seller_country}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Email: </span><span className="text-[#1B2A4A]">{stmt.seller_email}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Phone: </span><span className="text-[#1B2A4A]">{stmt.seller_phone}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Seller ID: </span><span className="text-[#1B2A4A]">{stmt.seller_id_code}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Tax ID: </span><span className="text-[#1B2A4A]">{stmt.seller_tax_id}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Commercial Register: </span><span className="text-[#1B2A4A]">{stmt.seller_commercial_register}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Statement #: </span><span className="text-[#1B2A4A]">{stmt.id}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Period: </span><span className="text-[#1B2A4A]">{new Date(stmt.period_start).toLocaleDateString('en-GB')} — {new Date(stmt.period_end).toLocaleDateString('en-GB')}</span></div>
+                    <div><span className="text-xs text-[#6B6560]">Issue Date: </span><span className="text-[#1B2A4A]">{new Date(stmt.created_at).toLocaleDateString('en-GB')}</span></div>
+                  </div>
+                </div>
+
                 {/* Summary */}
                 <div className="px-6 py-4 bg-[#F5F4F0] grid grid-cols-4 gap-4">
                   <div><p className="text-xs text-[#6B6560]">Total Sales</p><p className="font-semibold text-[#1B2A4A]">{fmt(stmt.total_sales)}</p></div>
@@ -336,17 +376,24 @@ export default function AdminStatementsPage() {
                   <div>
                     <p className="text-xs text-[#6B6560]">Overall Discount</p>
                     {editingDiscount === stmt.id ? (
-                      <div className="flex gap-2 mt-1">
-                        <input type="number" value={discountValue} onChange={e => setDiscountValue(e.target.value)}
-                          className="w-24 border border-[#E0DDDA] rounded px-2 py-1 text-xs" />
-                        <button onClick={() => handleUpdateDiscount(stmt.id)} className="text-xs bg-[#1B2A4A] text-white px-2 py-1 rounded">Save</button>
-                        <button onClick={() => setEditingDiscount(null)} className="text-xs text-[#6B6560]">✕</button>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <div className="flex gap-2">
+                          <input type="number" value={discountValue} onChange={e => setDiscountValue(e.target.value)}
+                            className="w-24 border border-[#E0DDDA] rounded px-2 py-1 text-xs" />
+                          <button onClick={() => handleUpdateDiscount(stmt.id)} className="text-xs bg-[#1B2A4A] text-white px-2 py-1 rounded">Save</button>
+                          <button onClick={() => setEditingDiscount(null)} className="text-xs text-[#6B6560]">✕</button>
+                        </div>
+                        <input value={discountDesc} onChange={e => setDiscountDesc(e.target.value)}
+                          placeholder="Discount description..." className="border border-[#E0DDDA] rounded px-2 py-1 text-xs w-full" />
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[#1B2A4A]">{fmt(stmt.overall_discount)}</p>
+                        <div>
+                          <p className="font-semibold text-[#1B2A4A]">{fmt(stmt.overall_discount)}</p>
+                          {stmt.discount_description && <p className="text-xs text-[#6B6560]">{stmt.discount_description}</p>}
+                        </div>
                         {stmt.status === 'draft' && (
-                          <button onClick={() => { setEditingDiscount(stmt.id); setDiscountValue(stmt.overall_discount) }}
+                          <button onClick={() => { setEditingDiscount(stmt.id); setDiscountValue(stmt.overall_discount); setDiscountDesc(stmt.discount_description) }}
                             className="text-xs text-[#C8952E] hover:underline">Edit</button>
                         )}
                       </div>
@@ -381,7 +428,7 @@ export default function AdminStatementsPage() {
                         <tr key={item.id} className="border-b border-[#E0DDDA] last:border-0">
                           <td className="py-2">
                             <span className="text-xs bg-[#F5F4F0] text-[#6B6560] px-2 py-0.5 rounded">
-                              {itemTypeLabels[item.item_type] ?? item.item_type}
+                              {item.item_type}
                             </span>
                           </td>
                           <td className="py-2 text-[#1B2A4A]">
@@ -429,10 +476,8 @@ export default function AdminStatementsPage() {
                       {addingItemTo === stmt.id && (
                         <tr className="border-b border-[#E0DDDA] bg-blue-50">
                           <td className="py-2">
-                            <select value={newItem.item_type} onChange={e => setNewItem(p => ({ ...p, item_type: e.target.value }))}
-                              className="border border-[#E0DDDA] rounded px-2 py-1 text-xs">
-                              {Object.entries(itemTypeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                            </select>
+                            <input value={newItem.item_type} onChange={e => setNewItem(p => ({ ...p, item_type: e.target.value }))}
+                              placeholder="Type..." className="border border-[#E0DDDA] rounded px-2 py-1 text-xs w-24" />
                           </td>
                           <td className="py-2">
                             <input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))}
@@ -457,6 +502,30 @@ export default function AdminStatementsPage() {
                       )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Admin Notes */}
+                <div className="px-6 py-4 border-t border-[#E0DDDA]">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide">Admin Notes</p>
+                    {stmt.status === 'draft' && editingNotes !== stmt.id && (
+                      <button onClick={() => { setEditingNotes(stmt.id); setNotesValue(stmt.admin_notes ?? '') }}
+                        className="text-xs text-[#C8952E] hover:underline">Edit</button>
+                    )}
+                  </div>
+                  {editingNotes === stmt.id ? (
+                    <div>
+                      <textarea value={notesValue} onChange={e => setNotesValue(e.target.value)}
+                        rows={3} placeholder="Internal notes..."
+                        className="w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none resize-none mb-2" />
+                      <div className="flex gap-2">
+                        <button onClick={() => handleUpdateNotes(stmt.id)} className="text-xs bg-[#1B2A4A] text-white px-3 py-1.5 rounded">Save</button>
+                        <button onClick={() => setEditingNotes(null)} className="text-xs text-[#6B6560]">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#1B2A4A] whitespace-pre-wrap">{stmt.admin_notes || <span className="text-[#6B6560] italic">No notes</span>}</p>
+                  )}
                 </div>
 
                 {/* Disputes */}
