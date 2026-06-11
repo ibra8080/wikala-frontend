@@ -1,5 +1,3 @@
-// app/(admin)/admin/statements/page.tsx
-
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
@@ -7,53 +5,26 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 
-interface Seller {
+interface Seller { id: number; business_name: string; seller_id: string; status: string }
+
+interface LineItem {
   id: number
-  business_name: string
-  seller_id: string
-  status: string
-}
-
-interface BreakdownRow {
-  product_code: string
-  product_name: string
-  sku: string
-  qty_germany: number
-  months: number
-  volume_m3: number
-  storage_cost: number
-}
-
-interface ShippingDetail {
-  product_code: string
-  product_name: string
-  actual_kg: number
-  volumetric_kg: number
-  chargeable_kg: number
-  num_cartons: number
-  shipping_cost: number
-}
-
-interface CalcResult {
-  total_sales: number
-  commission_amount: number
-  storage_fee_amount: number
-  pick_pack_amount: number
-  shipping_fee_amount: number
-  net_amount: number
-  breakdown: BreakdownRow[]
-  shipping_detail: ShippingDetail[]
-}
-
-interface SaleRecord {
-  id: number
-  product_name: string
-  shopify_order_id: string
-  channel: string
-  quantity_sold: number
+  item_type: string
+  description: string
+  quantity: string
   unit_price: string
-  total_amount: string
-  sale_date: string
+  amount: string
+  discount: string
+  order_index: number
+}
+
+interface Dispute {
+  id: number
+  line_item: number | null
+  seller_message: string
+  admin_response: string
+  status: string
+  created_at: string
 }
 
 interface Statement {
@@ -63,49 +34,68 @@ interface Statement {
   period_start: string
   period_end: string
   total_sales: string
-  commission_amount: string
-  storage_fee_amount: string
-  pick_pack_amount: string
-  shipping_fee_amount: string
+  total_fees: string
+  overall_discount: string
   net_amount: string
   status: string
+  admin_notes: string
+  sent_at: string | null
+  auto_finalize_date: string | null
   paid_at: string | null
   created_at: string
-  sale_records: SaleRecord[]
+  line_items: LineItem[]
+  disputes: Dispute[]
+  has_dispute: boolean
 }
 
 const statusStyles: Record<string, string> = {
-  draft:   'bg-gray-100 text-gray-600 border-gray-200',
-  sent:    'bg-amber-50 text-amber-700 border-amber-200',
-  paid:    'bg-green-50 text-green-700 border-green-200',
+  draft:    'bg-gray-100 text-gray-600 border-gray-200',
+  sent:     'bg-amber-50 text-amber-700 border-amber-200',
+  accepted: 'bg-blue-50 text-blue-700 border-blue-200',
+  disputed: 'bg-red-50 text-red-700 border-red-200',
+  paid:     'bg-green-50 text-green-700 border-green-200',
 }
 
-const tabs = ['all', 'draft', 'sent', 'paid']
+const itemTypeLabels: Record<string, string> = {
+  sale: 'Sales', commission: 'Commission', storage: 'Storage',
+  shipping: 'Shipping', pick_pack: 'Pick & Pack',
+  web_service: 'Web Service', custom: 'Custom',
+}
+
+const fmt = (n: string | number) => `€${parseFloat(String(n)).toFixed(2)}`
+const inputClass = "w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A] transition"
 
 export default function AdminStatementsPage() {
   const router = useRouter()
   const { user, _hasHydrated } = useAuthStore()
-
-  const [statements, setStatements]     = useState<Statement[]>([])
-  const [sellers, setSellers]           = useState<Seller[]>([])
-  const [loading, setLoading]           = useState(true)
-  const [filter, setFilter]             = useState('all')
-  const [expandedId, setExpandedId]     = useState<number | null>(null)
+  const [statements, setStatements] = useState<Statement[]>([])
+  const [sellers, setSellers] = useState<Seller[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all')
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
 
-  // New Statement
-  const [showNew, setShowNew]           = useState(false)
-  const [calcResult, setCalcResult]     = useState<CalcResult | null>(null)
-  const [calculating, setCalculating]   = useState(false)
-  const [creating, setCreating]         = useState(false)
-  const [calcError, setCalcError]       = useState('')
+  // Generate form
+  const [showNew, setShowNew] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [genError, setGenError] = useState('')
+  const [form, setForm] = useState({ seller: '', period_start: '', period_end: '', shipping_rate: '0' })
 
-  const [form, setForm] = useState({
-    seller: '',
-    period_start: '',
-    period_end: '',
-    shipping_rate: '',
-  })
+  // Edit line item
+  const [editingItem, setEditingItem] = useState<number | null>(null)
+  const [editItemForm, setEditItemForm] = useState({ description: '', amount: '', discount: '0' })
+
+  // Add line item
+  const [addingItemTo, setAddingItemTo] = useState<number | null>(null)
+  const [newItem, setNewItem] = useState({ description: '', item_type: 'custom', amount: '', discount: '0' })
+
+  // Overall discount
+  const [editingDiscount, setEditingDiscount] = useState<number | null>(null)
+  const [discountValue, setDiscountValue] = useState('0')
+
+  // Dispute resolve
+  const [resolvingDispute, setResolvingDispute] = useState<{ stmtId: number; disputeId: number } | null>(null)
+  const [disputeResponse, setDisputeResponse] = useState('')
 
   const fetchAll = useCallback(async () => {
     try {
@@ -127,70 +117,92 @@ export default function AdminStatementsPage() {
     void fetchAll()
   }, [user, _hasHydrated, router, fetchAll])
 
-  // ── Calculate ──────────────────────────────────────────────────────────────
-
-  const handleCalculate = async () => {
-    if (!form.seller || !form.shipping_rate) return
-    setCalculating(true)
-    setCalcError('')
-    setCalcResult(null)
+  const handleGenerate = async () => {
+    if (!form.seller || !form.period_start || !form.period_end) return
+    setGenerating(true)
+    setGenError('')
     try {
-      const res = await api.post('/finance/admin/statements/calculate/', {
+      await api.post('/finance/admin/statements/generate/', {
         seller: parseInt(form.seller),
-        period_start: form.period_start || '2020-01-01',
-        period_end: form.period_end || new Date().toISOString().split('T')[0],
-        shipping_rate: parseFloat(form.shipping_rate),
-      })
-      setCalcResult(res.data)
-    } catch {
-      setCalcError('Calculation failed. Please check inputs.')
-    } finally {
-      setCalculating(false)
-    }
-  }
-
-  // ── Create ─────────────────────────────────────────────────────────────────
-
-  const handleCreate = async () => {
-    if (!calcResult || !form.seller) return
-    setCreating(true)
-    try {
-      await api.post('/finance/admin/statements/', {
-        seller: parseInt(form.seller),
-        period_start: form.period_start || '2020-01-01',
-        period_end: form.period_end || new Date().toISOString().split('T')[0],
-        total_sales: calcResult.total_sales,
-        commission_amount: calcResult.commission_amount,
-        storage_fee_amount: calcResult.storage_fee_amount,
-        pick_pack_amount: calcResult.pick_pack_amount,
-        shipping_fee_amount: calcResult.shipping_fee_amount,
-        net_amount: calcResult.net_amount,
-        status: 'draft',
+        period_start: form.period_start,
+        period_end: form.period_end,
+        shipping_rate: parseFloat(form.shipping_rate || '0'),
       })
       setShowNew(false)
-      setCalcResult(null)
-      setForm({ seller: '', period_start: '', period_end: '', shipping_rate: '' })
+      setForm({ seller: '', period_start: '', period_end: '', shipping_rate: '0' })
       await fetchAll()
+    } catch {
+      setGenError('Failed to generate statement.')
     } finally {
-      setCreating(false)
+      setGenerating(false)
     }
   }
 
-  // ── Status Change ──────────────────────────────────────────────────────────
-
-  const handleStatusChange = async (id: number, status: string) => {
+  const handleSend = async (id: number) => {
     setActionLoading(id)
     try {
-      await api.patch(`/finance/admin/statements/${id}/`, { status })
+      await api.post(`/finance/admin/statements/${id}/send/`)
       await fetchAll()
-    } finally {
-      setActionLoading(null)
-    }
+    } finally { setActionLoading(null) }
   }
 
+  const handleMarkPaid = async (id: number) => {
+    setActionLoading(id)
+    try {
+      await api.post(`/finance/admin/statements/${id}/mark-paid/`)
+      await fetchAll()
+    } finally { setActionLoading(null) }
+  }
+
+  const handleSaveItem = async (stmtId: number, itemId: number) => {
+    try {
+      await api.patch(`/finance/admin/statements/${stmtId}/line-items/${itemId}/`, editItemForm)
+      setEditingItem(null)
+      await fetchAll()
+    } catch { alert('Failed to update item.') }
+  }
+
+  const handleDeleteItem = async (stmtId: number, itemId: number) => {
+    if (!confirm('Delete this line item?')) return
+    try {
+      await api.delete(`/finance/admin/statements/${stmtId}/line-items/${itemId}/`)
+      await fetchAll()
+    } catch { alert('Failed to delete item.') }
+  }
+
+  const handleAddItem = async (stmtId: number) => {
+    if (!newItem.description || !newItem.amount) return
+    try {
+      await api.post(`/finance/admin/statements/${stmtId}/line-items/`, {
+        ...newItem, quantity: 1, unit_price: newItem.amount,
+      })
+      setAddingItemTo(null)
+      setNewItem({ description: '', item_type: 'custom', amount: '', discount: '0' })
+      await fetchAll()
+    } catch { alert('Failed to add item.') }
+  }
+
+  const handleUpdateDiscount = async (stmtId: number) => {
+    try {
+      await api.patch(`/finance/admin/statements/${stmtId}/`, { overall_discount: discountValue })
+      setEditingDiscount(null)
+      await fetchAll()
+    } catch { alert('Failed to update discount.') }
+  }
+
+  const handleResolveDispute = async (stmtId: number, disputeId: number, newStatus: string) => {
+    try {
+      await api.patch(`/finance/admin/statements/${stmtId}/disputes/${disputeId}/resolve/`, {
+        admin_response: disputeResponse, status: newStatus,
+      })
+      setResolvingDispute(null)
+      setDisputeResponse('')
+      await fetchAll()
+    } catch { alert('Failed to resolve dispute.') }
+  }
+
+  const tabs = ['all', 'draft', 'sent', 'disputed', 'accepted', 'paid']
   const filtered = filter === 'all' ? statements : statements.filter(s => s.status === filter)
-  const fmt = (n: string | number) => `€${parseFloat(String(n)).toFixed(2)}`
-  const inputClass = "w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A] transition"
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -206,147 +218,49 @@ export default function AdminStatementsPage() {
           <h1 className="text-2xl font-bold text-[#1B2A4A]">Statements</h1>
           <p className="text-sm text-[#6B6560] mt-1">{statements.length} total statements</p>
         </div>
-        <button onClick={() => { setShowNew(true); setCalcResult(null) }}
+        <button onClick={() => setShowNew(true)}
           className="bg-[#1B2A4A] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#243860] transition">
           + New Statement
         </button>
       </div>
 
-      {/* ══ New Statement Form ══ */}
+      {/* Generate Form */}
       {showNew && (
         <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6 mb-6">
-          <p className="font-semibold text-[#1B2A4A] mb-4">New Statement</p>
-
-          {/* Step 1: Inputs */}
+          <p className="font-semibold text-[#1B2A4A] mb-4">Generate New Statement</p>
           <div className="grid grid-cols-4 gap-4 mb-4">
             <div>
-              <label className="block text-xs text-[#6B6560] mb-1">Seller <span className="text-red-400">*</span></label>
-              <select value={form.seller} onChange={e => { setForm(p => ({ ...p, seller: e.target.value })); setCalcResult(null) }} className={inputClass}>
+              <label className="block text-xs text-[#6B6560] mb-1">Seller *</label>
+              <select value={form.seller} onChange={e => setForm(p => ({ ...p, seller: e.target.value }))} className={inputClass}>
                 <option value="">Select seller...</option>
                 {sellers.map(s => <option key={s.id} value={s.id}>{s.business_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#6B6560] mb-1">Period Start</label>
-              <input type="date" value={form.period_start} onChange={e => { setForm(p => ({ ...p, period_start: e.target.value })); setCalcResult(null) }} className={inputClass} />
+              <label className="block text-xs text-[#6B6560] mb-1">Period Start *</label>
+              <input type="date" value={form.period_start} onChange={e => setForm(p => ({ ...p, period_start: e.target.value }))} className={inputClass} />
             </div>
             <div>
-              <label className="block text-xs text-[#6B6560] mb-1">Period End</label>
-              <input type="date" value={form.period_end} onChange={e => { setForm(p => ({ ...p, period_end: e.target.value })); setCalcResult(null) }} className={inputClass} />
+              <label className="block text-xs text-[#6B6560] mb-1">Period End *</label>
+              <input type="date" value={form.period_end} onChange={e => setForm(p => ({ ...p, period_end: e.target.value }))} className={inputClass} />
             </div>
             <div>
-              <label className="block text-xs text-[#6B6560] mb-1">
-                Shipping Rate (€/kg) <span className="text-red-400">*</span>
-              </label>
-              <input type="number" step="0.01" value={form.shipping_rate}
-                onChange={e => { setForm(p => ({ ...p, shipping_rate: e.target.value })); setCalcResult(null) }}
-                placeholder="e.g. 5.00" className={inputClass} />
+              <label className="block text-xs text-[#6B6560] mb-1">Shipping Rate (€/kg)</label>
+              <input type="number" step="0.01" value={form.shipping_rate} onChange={e => setForm(p => ({ ...p, shipping_rate: e.target.value }))} placeholder="0.00" className={inputClass} />
             </div>
           </div>
-
-          <button onClick={handleCalculate}
-            disabled={calculating || !form.seller || !form.shipping_rate}
-            className="bg-[#C8952E] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-50 transition mb-4">
-            {calculating ? 'Calculating...' : '⚡ Calculate'}
-          </button>
-
-          {calcError && <p className="text-red-500 text-sm mb-4">{calcError}</p>}
-
-          {/* Step 2: Results */}
-          {calcResult && (
-            <div>
-              {/* Summary */}
-              <div className="grid grid-cols-6 gap-3 bg-[#F5F4F0] rounded-xl p-4 mb-4">
-                {[
-                  { label: 'Total Sales',    value: fmt(calcResult.total_sales) },
-                  { label: 'Commission',     value: fmt(calcResult.commission_amount) },
-                  { label: 'Storage Fee',    value: fmt(calcResult.storage_fee_amount) },
-                  { label: 'Pick & Pack',    value: fmt(calcResult.pick_pack_amount) },
-                  { label: 'Shipping',       value: fmt(calcResult.shipping_fee_amount) },
-                  { label: 'Net Amount',     value: fmt(calcResult.net_amount), highlight: true },
-                ].map(item => (
-                  <div key={item.label}>
-                    <p className="text-xs text-[#6B6560]">{item.label}</p>
-                    <p className={`font-semibold mt-0.5 text-sm ${item.highlight ? 'text-green-600' : 'text-[#1B2A4A]'}`}>
-                      {item.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Storage Breakdown */}
-              {calcResult.breakdown.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">Storage Breakdown</p>
-                  <table className="w-full text-sm border border-[#E0DDDA] rounded-xl overflow-hidden">
-                    <thead>
-                      <tr className="bg-[#F5F4F0] border-b border-[#E0DDDA]">
-                        {['Product', 'SKU', 'Qty', 'Months', 'Volume (m³)', 'Storage Cost'].map(h => (
-                          <th key={h} className="text-left text-xs text-[#6B6560] px-3 py-2">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {calcResult.breakdown.map(row => (
-                        <tr key={row.sku} className="border-b border-[#E0DDDA] last:border-0">
-                          <td className="px-3 py-2 text-[#1B2A4A]">{row.product_name}</td>
-                          <td className="px-3 py-2 font-mono text-xs text-[#6B6560]">{row.sku}</td>
-                          <td className="px-3 py-2 text-[#1B2A4A]">{row.qty_germany}</td>
-                          <td className="px-3 py-2 text-[#6B6560]">{row.months}</td>
-                          <td className="px-3 py-2 text-[#6B6560]">{row.volume_m3}</td>
-                          <td className="px-3 py-2 font-semibold text-[#1B2A4A]">{fmt(row.storage_cost)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Shipping Breakdown */}
-              {calcResult.shipping_detail.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">Shipping Breakdown</p>
-                  <table className="w-full text-sm border border-[#E0DDDA] rounded-xl overflow-hidden">
-                    <thead>
-                      <tr className="bg-[#F5F4F0] border-b border-[#E0DDDA]">
-                        {['Product', 'Actual (kg)', 'Volumetric (kg)', 'Chargeable (kg)', 'Cartons', 'Shipping Cost'].map(h => (
-                          <th key={h} className="text-left text-xs text-[#6B6560] px-3 py-2">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {calcResult.shipping_detail.map(row => (
-                        <tr key={row.product_code} className="border-b border-[#E0DDDA] last:border-0">
-                          <td className="px-3 py-2 text-[#1B2A4A]">{row.product_name}</td>
-                          <td className="px-3 py-2 text-[#6B6560]">{row.actual_kg}</td>
-                          <td className="px-3 py-2 text-[#6B6560]">{row.volumetric_kg}</td>
-                          <td className="px-3 py-2 font-semibold text-[#C8952E]">{row.chargeable_kg}</td>
-                          <td className="px-3 py-2 text-[#6B6560]">{row.num_cartons}</td>
-                          <td className="px-3 py-2 font-semibold text-[#1B2A4A]">{fmt(row.shipping_cost)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <button onClick={handleCreate} disabled={creating}
-                  className="bg-[#1B2A4A] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#243860] disabled:opacity-50 transition">
-                  {creating ? 'Creating...' : '✓ Create Statement'}
-                </button>
-                <button onClick={() => { setShowNew(false); setCalcResult(null) }}
-                  className="text-sm text-[#6B6560] px-4 py-2">
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
+          {genError && <p className="text-red-500 text-sm mb-3">{genError}</p>}
+          <div className="flex gap-2">
+            <button onClick={handleGenerate} disabled={generating || !form.seller || !form.period_start || !form.period_end}
+              className="bg-[#C8952E] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-50 transition">
+              {generating ? 'Generating...' : '⚡ Generate Statement'}
+            </button>
+            <button onClick={() => setShowNew(false)} className="text-sm text-[#6B6560] px-4 py-2">Cancel</button>
+          </div>
         </div>
       )}
 
-      {/* ══ Filter Tabs ══ */}
+      {/* Tabs */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map(tab => (
           <button key={tab} onClick={() => setFilter(tab)}
@@ -360,56 +274,50 @@ export default function AdminStatementsPage() {
         ))}
       </div>
 
-      {/* ══ Statements List ══ */}
+      {/* Statements */}
       <div className="space-y-4">
         {filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-12 text-center">
             <p className="text-sm text-[#6B6560]">No statements found.</p>
           </div>
         ) : filtered.map(stmt => (
-          <div key={stmt.id} className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
+          <div key={stmt.id} className={`bg-white rounded-2xl border overflow-hidden ${stmt.has_dispute ? 'border-red-300' : 'border-[#E0DDDA]'}`}>
 
-            {/* Row */}
+            {/* Card Header */}
             <div className="px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div>
                   <p className="font-semibold text-[#1B2A4A]">{stmt.seller_name}</p>
                   <p className="text-xs text-[#6B6560] mt-0.5">
-                    {new Date(stmt.period_start).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
-                    {' · '}
                     {new Date(stmt.period_start).toLocaleDateString('en-GB')} — {new Date(stmt.period_end).toLocaleDateString('en-GB')}
                   </p>
                 </div>
                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusStyles[stmt.status] ?? ''}`}>
                   {stmt.status}
                 </span>
+                {stmt.has_dispute && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-300">
+                    ⚠ Disputed
+                  </span>
+                )}
               </div>
-
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <p className="text-xs text-[#6B6560]">Total Sales</p>
-                  <p className="font-semibold text-[#1B2A4A]">{fmt(stmt.total_sales)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-[#6B6560]">Net Amount</p>
+                  <p className="text-xs text-[#6B6560]">Net</p>
                   <p className="font-semibold text-green-600">{fmt(stmt.net_amount)}</p>
                 </div>
-
                 {stmt.status === 'draft' && (
-                  <button onClick={() => handleStatusChange(stmt.id, 'sent')}
-                    disabled={actionLoading === stmt.id}
+                  <button onClick={() => handleSend(stmt.id)} disabled={actionLoading === stmt.id}
                     className="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-100 disabled:opacity-50 transition">
                     Send to Seller
                   </button>
                 )}
-                {stmt.status === 'sent' && (
-                  <button onClick={() => handleStatusChange(stmt.id, 'paid')}
-                    disabled={actionLoading === stmt.id}
+                {stmt.status === 'accepted' && (
+                  <button onClick={() => handleMarkPaid(stmt.id)} disabled={actionLoading === stmt.id}
                     className="bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-100 disabled:opacity-50 transition">
                     Mark as Paid
                   </button>
                 )}
-
                 <button onClick={() => setExpandedId(expandedId === stmt.id ? null : stmt.id)}
                   className="text-sm text-[#C8952E] hover:underline">
                   {expandedId === stmt.id ? 'Hide ↑' : 'View ↓'}
@@ -420,60 +328,189 @@ export default function AdminStatementsPage() {
             {/* Expanded */}
             {expandedId === stmt.id && (
               <div className="border-t border-[#E0DDDA]">
-                <div className="px-6 py-4 grid grid-cols-5 gap-4 bg-[#F5F4F0]">
-                  {[
-                    { label: 'Total Sales',    value: fmt(stmt.total_sales) },
-                    { label: 'Commission',     value: fmt(stmt.commission_amount) },
-                    { label: 'Storage Fee',    value: fmt(stmt.storage_fee_amount) },
-                    { label: 'Shipping Fee',   value: fmt(stmt.shipping_fee_amount) },
-                    { label: 'Net Amount',     value: fmt(stmt.net_amount), highlight: true },
-                  ].map(item => (
-                    <div key={item.label}>
-                      <p className="text-xs text-[#6B6560]">{item.label}</p>
-                      <p className={`font-semibold mt-0.5 ${item.highlight ? 'text-green-600' : 'text-[#1B2A4A]'}`}>
-                        {item.value}
-                      </p>
-                    </div>
-                  ))}
+
+                {/* Summary */}
+                <div className="px-6 py-4 bg-[#F5F4F0] grid grid-cols-4 gap-4">
+                  <div><p className="text-xs text-[#6B6560]">Total Sales</p><p className="font-semibold text-[#1B2A4A]">{fmt(stmt.total_sales)}</p></div>
+                  <div><p className="text-xs text-[#6B6560]">Total Fees</p><p className="font-semibold text-[#1B2A4A]">{fmt(stmt.total_fees)}</p></div>
+                  <div>
+                    <p className="text-xs text-[#6B6560]">Overall Discount</p>
+                    {editingDiscount === stmt.id ? (
+                      <div className="flex gap-2 mt-1">
+                        <input type="number" value={discountValue} onChange={e => setDiscountValue(e.target.value)}
+                          className="w-24 border border-[#E0DDDA] rounded px-2 py-1 text-xs" />
+                        <button onClick={() => handleUpdateDiscount(stmt.id)} className="text-xs bg-[#1B2A4A] text-white px-2 py-1 rounded">Save</button>
+                        <button onClick={() => setEditingDiscount(null)} className="text-xs text-[#6B6560]">✕</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-[#1B2A4A]">{fmt(stmt.overall_discount)}</p>
+                        {stmt.status === 'draft' && (
+                          <button onClick={() => { setEditingDiscount(stmt.id); setDiscountValue(stmt.overall_discount) }}
+                            className="text-xs text-[#C8952E] hover:underline">Edit</button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div><p className="text-xs text-[#6B6560]">Net Amount</p><p className="font-bold text-green-600 text-lg">{fmt(stmt.net_amount)}</p></div>
                 </div>
 
-                {stmt.sale_records?.length > 0 ? (
-                  <div className="px-6 py-4">
-                    <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Sale Records</p>
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-[#E0DDDA]">
-                          {['Product', 'Order ID', 'Channel', 'Qty', 'Unit Price', 'Total', 'Date'].map(h => (
-                            <th key={h} className="text-left text-xs text-[#6B6560] pb-2">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stmt.sale_records.map(rec => (
-                          <tr key={rec.id} className="border-b border-[#E0DDDA] last:border-0">
-                            <td className="py-2 text-[#1B2A4A]">{rec.product_name}</td>
-                            <td className="py-2 font-mono text-xs text-[#6B6560]">{rec.shopify_order_id || '—'}</td>
-                            <td className="py-2 text-[#6B6560]">{rec.channel}</td>
-                            <td className="py-2 text-[#1B2A4A]">{rec.quantity_sold}</td>
-                            <td className="py-2 text-[#1B2A4A]">{fmt(rec.unit_price)}</td>
-                            <td className="py-2 font-semibold text-[#1B2A4A]">{fmt(rec.total_amount)}</td>
-                            <td className="py-2 text-[#6B6560]">{new Date(rec.sale_date).toLocaleDateString('en-GB')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {/* Line Items */}
+                <div className="px-6 py-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide">Line Items</p>
+                    {stmt.status === 'draft' && (
+                      <button onClick={() => setAddingItemTo(stmt.id)}
+                        className="text-xs text-[#C8952E] hover:underline">+ Add Item</button>
+                    )}
                   </div>
-                ) : (
-                  <div className="px-6 py-4">
-                    <p className="text-sm text-[#6B6560]">No sale records attached yet.</p>
+
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[#E0DDDA]">
+                        <th className="text-left text-xs text-[#6B6560] pb-2">Type</th>
+                        <th className="text-left text-xs text-[#6B6560] pb-2">Description</th>
+                        <th className="text-right text-xs text-[#6B6560] pb-2">Amount</th>
+                        <th className="text-right text-xs text-[#6B6560] pb-2">Discount</th>
+                        <th className="text-right text-xs text-[#6B6560] pb-2">Net</th>
+                        {stmt.status === 'draft' && <th className="pb-2" />}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stmt.line_items.map(item => (
+                        <tr key={item.id} className="border-b border-[#E0DDDA] last:border-0">
+                          <td className="py-2">
+                            <span className="text-xs bg-[#F5F4F0] text-[#6B6560] px-2 py-0.5 rounded">
+                              {itemTypeLabels[item.item_type] ?? item.item_type}
+                            </span>
+                          </td>
+                          <td className="py-2 text-[#1B2A4A]">
+                            {editingItem === item.id ? (
+                              <input value={editItemForm.description} onChange={e => setEditItemForm(p => ({ ...p, description: e.target.value }))}
+                                className="border border-[#E0DDDA] rounded px-2 py-1 text-xs w-full" />
+                            ) : item.description}
+                          </td>
+                          <td className="py-2 text-right text-[#1B2A4A]">
+                            {editingItem === item.id ? (
+                              <input type="number" value={editItemForm.amount} onChange={e => setEditItemForm(p => ({ ...p, amount: e.target.value }))}
+                                className="border border-[#E0DDDA] rounded px-2 py-1 text-xs w-24 text-right" />
+                            ) : fmt(item.amount)}
+                          </td>
+                          <td className="py-2 text-right text-[#6B6560]">
+                            {editingItem === item.id ? (
+                              <input type="number" value={editItemForm.discount} onChange={e => setEditItemForm(p => ({ ...p, discount: e.target.value }))}
+                                className="border border-[#E0DDDA] rounded px-2 py-1 text-xs w-20 text-right" />
+                            ) : fmt(item.discount)}
+                          </td>
+                          <td className="py-2 text-right font-semibold text-[#1B2A4A]">
+                            {fmt(parseFloat(item.amount) - parseFloat(item.discount))}
+                          </td>
+                          {stmt.status === 'draft' && (
+                            <td className="py-2 text-right">
+                              {editingItem === item.id ? (
+                                <div className="flex gap-1 justify-end">
+                                  <button onClick={() => handleSaveItem(stmt.id, item.id)} className="text-xs bg-[#1B2A4A] text-white px-2 py-1 rounded">Save</button>
+                                  <button onClick={() => setEditingItem(null)} className="text-xs text-[#6B6560]">✕</button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-2 justify-end">
+                                  <button onClick={() => { setEditingItem(item.id); setEditItemForm({ description: item.description, amount: item.amount, discount: item.discount }) }}
+                                    className="text-xs text-[#C8952E] hover:underline">Edit</button>
+                                  <button onClick={() => handleDeleteItem(stmt.id, item.id)}
+                                    className="text-xs text-red-400 hover:text-red-600">Delete</button>
+                                </div>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+
+                      {/* Add Item Row */}
+                      {addingItemTo === stmt.id && (
+                        <tr className="border-b border-[#E0DDDA] bg-blue-50">
+                          <td className="py-2">
+                            <select value={newItem.item_type} onChange={e => setNewItem(p => ({ ...p, item_type: e.target.value }))}
+                              className="border border-[#E0DDDA] rounded px-2 py-1 text-xs">
+                              {Object.entries(itemTypeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                            </select>
+                          </td>
+                          <td className="py-2">
+                            <input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))}
+                              placeholder="Description..." className="border border-[#E0DDDA] rounded px-2 py-1 text-xs w-full" />
+                          </td>
+                          <td className="py-2">
+                            <input type="number" value={newItem.amount} onChange={e => setNewItem(p => ({ ...p, amount: e.target.value }))}
+                              placeholder="0.00" className="border border-[#E0DDDA] rounded px-2 py-1 text-xs w-24 text-right" />
+                          </td>
+                          <td className="py-2">
+                            <input type="number" value={newItem.discount} onChange={e => setNewItem(p => ({ ...p, discount: e.target.value }))}
+                              placeholder="0.00" className="border border-[#E0DDDA] rounded px-2 py-1 text-xs w-20 text-right" />
+                          </td>
+                          <td />
+                          <td className="py-2">
+                            <div className="flex gap-1 justify-end">
+                              <button onClick={() => handleAddItem(stmt.id)} className="text-xs bg-[#C8952E] text-white px-2 py-1 rounded">Add</button>
+                              <button onClick={() => setAddingItemTo(null)} className="text-xs text-[#6B6560]">✕</button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Disputes */}
+                {stmt.disputes.length > 0 && (
+                  <div className="px-6 py-4 border-t border-[#E0DDDA]">
+                    <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-3">Disputes</p>
+                    {stmt.disputes.map(dispute => (
+                      <div key={dispute.id} className="bg-red-50 rounded-xl p-4 mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-medium text-red-700">
+                            {new Date(dispute.created_at).toLocaleDateString('en-GB')} · {dispute.status}
+                          </p>
+                          {dispute.status === 'open' && (
+                            <button onClick={() => setResolvingDispute({ stmtId: stmt.id, disputeId: dispute.id })}
+                              className="text-xs text-[#1B2A4A] border border-[#E0DDDA] px-2 py-1 rounded hover:border-[#1B2A4A]">
+                              Respond
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-sm text-red-800 mb-2"><span className="font-medium">Seller:</span> {dispute.seller_message}</p>
+                        {dispute.admin_response && (
+                          <p className="text-sm text-[#1B2A4A]"><span className="font-medium">Admin:</span> {dispute.admin_response}</p>
+                        )}
+                        {resolvingDispute?.disputeId === dispute.id && (
+                          <div className="mt-3">
+                            <textarea value={disputeResponse} onChange={e => setDisputeResponse(e.target.value)}
+                              placeholder="Your response..." rows={2}
+                              className="w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none resize-none mb-2" />
+                            <div className="flex gap-2">
+                              <button onClick={() => handleResolveDispute(stmt.id, dispute.id, 'resolved')}
+                                className="bg-green-600 text-white px-3 py-1.5 rounded text-xs">Resolve</button>
+                              <button onClick={() => handleResolveDispute(stmt.id, dispute.id, 'rejected')}
+                                className="bg-red-600 text-white px-3 py-1.5 rounded text-xs">Reject</button>
+                              <button onClick={() => setResolvingDispute(null)} className="text-xs text-[#6B6560]">Cancel</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
 
+                {/* Footer info */}
+                {stmt.sent_at && (
+                  <div className="px-6 py-3 bg-amber-50 border-t border-amber-100">
+                    <p className="text-xs text-amber-700">
+                      Sent on {new Date(stmt.sent_at).toLocaleDateString('en-GB')}
+                      {stmt.auto_finalize_date && ` · Auto-finalizes on ${new Date(stmt.auto_finalize_date).toLocaleDateString('en-GB')}`}
+                    </p>
+                  </div>
+                )}
                 {stmt.status === 'paid' && stmt.paid_at && (
                   <div className="px-6 py-3 bg-green-50 border-t border-green-100">
-                    <p className="text-xs text-green-700">
-                      Paid on {new Date(stmt.paid_at).toLocaleDateString('en-GB')}
-                    </p>
+                    <p className="text-xs text-green-700">Paid on {new Date(stmt.paid_at).toLocaleDateString('en-GB')}</p>
                   </div>
                 )}
               </div>
