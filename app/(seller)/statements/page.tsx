@@ -51,6 +51,7 @@ interface FullStatement {
   total_sales: string
   total_fees: string
   overall_discount: string
+  discount_description: string
   net_amount: string
   status: string
   sent_at: string | null
@@ -60,6 +61,17 @@ interface FullStatement {
   line_items: LineItem[]
   disputes: Dispute[]
   has_dispute: boolean
+  seller_business_name: string
+  seller_legal_name: string
+  seller_full_name: string
+  seller_email: string
+  seller_phone: string
+  seller_legal_address: string
+  seller_city: string
+  seller_country: string
+  seller_tax_id: string
+  seller_commercial_register: string
+  seller_id_code: string
 }
 
 interface WebService {
@@ -481,39 +493,72 @@ export default function StatementsPage() {
               {/* Expanded */}
               {expandedStmt === stmt.id && (
                 <div className="border-t border-[#E0DDDA]">
+                  {/* Seller Legal Info */}
+                  <div className="px-6 py-4 border-b border-[#E0DDDA]">
+                    <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Invoice Details</p>
+                    <div className="grid grid-cols-3 gap-x-8 gap-y-2 text-sm">
+                      <div><span className="text-xs text-[#6B6560]">Legal Name: </span><span className="text-[#1B2A4A]">{stmt.seller_legal_name}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Business Name: </span><span className="text-[#1B2A4A]">{stmt.seller_business_name}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Full Name: </span><span className="text-[#1B2A4A]">{stmt.seller_full_name}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Address: </span><span className="text-[#1B2A4A]">{stmt.seller_legal_address}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">City: </span><span className="text-[#1B2A4A]">{stmt.seller_city}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Country: </span><span className="text-[#1B2A4A]">{stmt.seller_country}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Email: </span><span className="text-[#1B2A4A]">{stmt.seller_email}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Phone: </span><span className="text-[#1B2A4A]">{stmt.seller_phone}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Seller ID: </span><span className="text-[#1B2A4A]">{stmt.seller_id_code}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Tax ID: </span><span className="text-[#1B2A4A]">{stmt.seller_tax_id}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Commercial Register: </span><span className="text-[#1B2A4A]">{stmt.seller_commercial_register}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Statement #: </span><span className="text-[#1B2A4A]">{stmt.id}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Period: </span><span className="text-[#1B2A4A]">{new Date(stmt.period_start).toLocaleDateString('en-GB')} — {new Date(stmt.period_end).toLocaleDateString('en-GB')}</span></div>
+                      <div><span className="text-xs text-[#6B6560]">Issue Date: </span><span className="text-[#1B2A4A]">{new Date(stmt.created_at).toLocaleDateString('en-GB')}</span></div>
+                    </div>
+                  </div>
+
                   {/* Summary */}
                   <div className="px-6 py-4 bg-[#F5F4F0] grid grid-cols-4 gap-4">
                     <div><p className="text-xs text-[#6B6560]">Total Sales</p><p className="font-semibold text-[#1B2A4A]">€{stmt.total_sales}</p></div>
                     <div><p className="text-xs text-[#6B6560]">Total Fees</p><p className="font-semibold text-[#1B2A4A]">€{stmt.total_fees}</p></div>
-                    <div><p className="text-xs text-[#6B6560]">Discount</p><p className="font-semibold text-green-600">-€{stmt.overall_discount}</p></div>
+                    <div>
+                      <p className="text-xs text-[#6B6560]">Discount</p>
+                      <p className="font-semibold text-green-600">-€{stmt.overall_discount}</p>
+                      {stmt.discount_description && <p className="text-xs text-[#6B6560] italic">{stmt.discount_description}</p>}
+                    </div>
                     <div><p className="text-xs text-[#6B6560]">Net Amount</p><p className="font-bold text-green-600 text-lg">€{stmt.net_amount}</p></div>
                   </div>
 
                   {/* Line Items */}
                   <div className="px-6 py-4">
                     <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Statement Details</p>
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-[#E0DDDA]">
-                          <th className="text-left text-xs text-[#6B6560] pb-2">Description</th>
-                          <th className="text-right text-xs text-[#6B6560] pb-2">Amount</th>
-                          <th className="text-right text-xs text-[#6B6560] pb-2">Discount</th>
-                          <th className="text-right text-xs text-[#6B6560] pb-2">Net</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stmt.line_items.map(item => (
-                          <tr key={item.id} className="border-b border-[#E0DDDA] last:border-0">
-                            <td className="py-2 text-[#1B2A4A]">{item.description}</td>
-                            <td className="py-2 text-right text-[#1B2A4A]">€{item.amount}</td>
-                            <td className="py-2 text-right text-green-600">{parseFloat(item.discount) > 0 ? `-€${item.discount}` : '—'}</td>
-                            <td className="py-2 text-right font-semibold text-[#1B2A4A]">
-                              €{(parseFloat(item.amount) - parseFloat(item.discount)).toFixed(2)}
-                            </td>
+                    {stmt.line_items.length === 0 ? (
+                      <p className="text-sm text-[#6B6560]">No line items.</p>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#E0DDDA]">
+                            <th className="text-left text-xs text-[#6B6560] pb-2">Type</th>
+                            <th className="text-left text-xs text-[#6B6560] pb-2">Description</th>
+                            <th className="text-right text-xs text-[#6B6560] pb-2">Amount</th>
+                            <th className="text-right text-xs text-[#6B6560] pb-2">Discount</th>
+                            <th className="text-right text-xs text-[#6B6560] pb-2">Net</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {stmt.line_items.map(item => (
+                            <tr key={item.id} className="border-b border-[#E0DDDA] last:border-0">
+                              <td className="py-2">
+                                <span className="text-xs bg-[#F5F4F0] text-[#6B6560] px-2 py-0.5 rounded">{item.item_type}</span>
+                              </td>
+                              <td className="py-2 text-[#1B2A4A]">{item.description}</td>
+                              <td className="py-2 text-right text-[#1B2A4A]">€{item.amount}</td>
+                              <td className="py-2 text-right text-green-600">{parseFloat(item.discount) > 0 ? `-€${item.discount}` : '—'}</td>
+                              <td className="py-2 text-right font-semibold text-[#1B2A4A]">
+                                €{(parseFloat(item.amount) - parseFloat(item.discount)).toFixed(2)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
 
                   {/* Disputes */}
