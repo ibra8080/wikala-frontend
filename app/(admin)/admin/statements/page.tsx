@@ -178,11 +178,13 @@ export default function AdminStatementsPage() {
   }
 
   const handleDeleteItem = async (stmtId: number, itemId: number) => {
-    if (!confirm('Delete this line item?')) return
+    if (!confirm('Reset this line item to zero?')) return
     try {
-      await api.delete(`/finance/admin/statements/${stmtId}/line-items/${itemId}/`)
+      await api.patch(`/finance/admin/statements/${stmtId}/line-items/${itemId}/`, {
+        amount: '0', unit_price: '0', discount: '0',
+      })
       await fetchAll()
-    } catch { alert('Failed to delete item.') }
+    } catch { alert('Failed to reset item.') }
   }
 
   const handleAddItem = async (stmtId: number) => {
@@ -468,7 +470,7 @@ export default function AdminStatementsPage() {
                                   <button onClick={() => { setEditingItem(item.id); setEditItemForm({ description: item.description, amount: item.amount, discount: item.discount }) }}
                                     className="text-xs text-[#C8952E] hover:underline">Edit</button>
                                   <button onClick={() => handleDeleteItem(stmt.id, item.id)}
-                                    className="text-xs text-red-400 hover:text-red-600">Delete</button>
+                                    className="text-xs text-red-400 hover:text-red-600">Reset</button>
                                 </div>
                               )}
                             </td>
