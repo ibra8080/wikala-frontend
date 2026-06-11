@@ -26,6 +26,14 @@ interface InventoryItem {
   quantity_in_germany: number
 }
 
+interface StatementSummary {
+  id: number
+  status: string
+  net_amount: string
+  period_start: string
+  period_end: string
+}
+
 export default function SellerDashboard() {
   const router = useRouter()
   const { user, _hasHydrated } = useAuthStore()
@@ -36,6 +44,7 @@ export default function SellerDashboard() {
   const [germanyCount, setGermanyCount]   = useState(0)
   const [totalSales, setTotalSales]       = useState('€0')
   const [shipmentIssues, setShipmentIssues] = useState<{ id: number; request_number: string; issue_note: string }[]>([])
+  const [pendingStatements, setPendingStatements] = useState<StatementSummary[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -63,7 +72,9 @@ export default function SellerDashboard() {
       setGermanyCount(
         (invRes.data as InventoryItem[]).filter(i => i.quantity_in_germany > 0).length
       )
-      const totalNet = (stmtRes.data as { status: string; net_amount: string }[])
+      const allStatements = stmtRes.data as StatementSummary[]
+      setPendingStatements(allStatements.filter(s => s.status === 'sent'))
+      const totalNet = allStatements
         .filter(s => s.status === 'paid')
         .reduce((sum, s) => sum + parseFloat(s.net_amount), 0)
       setTotalSales(`€${totalNet.toFixed(2)}`)
@@ -140,6 +151,31 @@ export default function SellerDashboard() {
           </div>
         )}
       </div>
+
+      {/* Pending Statements */}
+      {pendingStatements.length > 0 && (
+        <Link href="/statements"
+          className="block bg-amber-50 border border-amber-300 rounded-2xl p-5 mb-6 hover:bg-amber-100 transition group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-amber-800 mb-1">
+                {pendingStatements.length} Statement{pendingStatements.length > 1 ? 's' : ''} Awaiting Your Review
+              </p>
+              <p className="text-xs text-amber-700">
+                {pendingStatements.map(s =>
+                  new Date(s.period_start).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+                ).join(', ')}
+              </p>
+              <p className="text-xs text-amber-700 mt-1">
+                Total: <span className="font-semibold">
+                  €{pendingStatements.reduce((sum, s) => sum + parseFloat(s.net_amount), 0).toFixed(2)}
+                </span>
+              </p>
+            </div>
+            <span className="text-amber-700 group-hover:translate-x-1 transition text-lg">→</span>
+          </div>
+        </Link>
+      )}
 
       {/* Shipment Issues */}
       {shipmentIssues.length > 0 && (
