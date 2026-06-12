@@ -56,6 +56,12 @@ interface WebServiceCharge {
   seller_name: string
   service: number
   service_name: string
+  service_description: string
+  service_price: string
+  product: number | null
+  product_name: string | null
+  product_code: string | null
+  product_variants: { id: number; sku: string; color: string; size: string }[]
   original_price: string
   discount_amount: string
   final_price: string
@@ -131,6 +137,7 @@ export default function AdminServicesPage() {
   const [editCodeForm, setEditCodeForm] = useState({ name: '', value: '', valid_until: '' })
   const [editingDiscount, setEditingDiscount] = useState<number | null>(null)
   const [editDiscountForm, setEditDiscountForm] = useState({ value: '', valid_until: '', note: '' })
+  const [expandedCharge, setExpandedCharge] = useState<number | null>(null)
 
   // ── Fetch ────────────────────────────────────────────────────────────────
 
@@ -805,41 +812,106 @@ export default function AdminServicesPage() {
               {charges.length === 0 ? (
                 <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-[#6B6560]">No charges yet.</td></tr>
               ) : charges.map(charge => (
-                <tr key={charge.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition">
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-medium text-[#1B2A4A]">{charge.seller_name}</p>
-                    {charge.period_month && (
-                      <p className="text-xs text-[#6B6560]">{charge.period_month}/{charge.period_year}</p>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-[#6B6560]">{charge.service_name}</td>
-                  <td className="px-6 py-4 text-sm text-[#1B2A4A]">{fmt(charge.original_price)}</td>
-                  <td className="px-6 py-4 text-sm text-green-600">
-                    {parseFloat(charge.discount_amount) > 0 ? `-${fmt(charge.discount_amount)}` : '—'}
-                  </td>
-                  <td className="px-6 py-4 font-semibold text-[#1B2A4A]">{fmt(charge.final_price)}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${chargeStatusStyles[charge.status] ?? ''}`}>
-                      {charge.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {charge.status === 'pending' && (
-                      <div className="flex gap-2">
-                        <button onClick={() => handleChargeStatusChange(charge.id, 'paid')}
-                          disabled={actionLoading === charge.id}
-                          className="text-xs text-green-700 hover:underline disabled:opacity-50">
-                          Mark Paid
-                        </button>
-                        <button onClick={() => handleChargeStatusChange(charge.id, 'waived')}
-                          disabled={actionLoading === charge.id}
-                          className="text-xs text-[#6B6560] hover:underline disabled:opacity-50">
-                          Waive
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
+                <Fragment key={charge.id}>
+                  <tr
+                    className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition cursor-pointer"
+                    onClick={() => setExpandedCharge(expandedCharge === charge.id ? null : charge.id)}>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium text-[#1B2A4A]">{charge.seller_name}</p>
+                      {charge.period_month && (
+                        <p className="text-xs text-[#6B6560]">{charge.period_month}/{charge.period_year}</p>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-[#6B6560]">{charge.service_name}</td>
+                    <td className="px-6 py-4 text-sm text-[#1B2A4A]">{fmt(charge.original_price)}</td>
+                    <td className="px-6 py-4 text-sm text-green-600">
+                      {parseFloat(charge.discount_amount) > 0 ? `-${fmt(charge.discount_amount)}` : '—'}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-[#1B2A4A]">{fmt(charge.final_price)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${chargeStatusStyles[charge.status] ?? ''}`}>
+                        {charge.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {charge.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <button onClick={(e) => { e.stopPropagation(); void handleChargeStatusChange(charge.id, 'paid') }}
+                            disabled={actionLoading === charge.id}
+                            className="text-xs text-green-700 hover:underline disabled:opacity-50">
+                            Mark Paid
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); void handleChargeStatusChange(charge.id, 'waived') }}
+                            disabled={actionLoading === charge.id}
+                            className="text-xs text-[#6B6560] hover:underline disabled:opacity-50">
+                            Waive
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                  {expandedCharge === charge.id && (
+                    <tr className="bg-[#FAFAF8] border-b border-[#E0DDDA]">
+                      <td colSpan={7} className="px-6 py-4">
+                        <div className="grid grid-cols-3 gap-6">
+                          {/* Service Details */}
+                          <div>
+                            <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">Service Details</p>
+                            <p className="text-sm font-medium text-[#1B2A4A]">{charge.service_name}</p>
+                            {charge.service_description && (
+                              <p className="text-xs text-[#6B6560] mt-1">{charge.service_description}</p>
+                            )}
+                            <p className="text-xs text-[#6B6560] mt-2">
+                              Base price: <span className="font-medium text-[#1B2A4A]">{fmt(charge.service_price)}</span>
+                            </p>
+                            <p className="text-xs text-[#6B6560]">
+                              Applied: <span className="font-medium text-[#1B2A4A]">
+                                {new Date(charge.created_at).toLocaleDateString('en-GB')}
+                              </span>
+                            </p>
+                          </div>
+
+                          {/* Product Details */}
+                          {charge.product && (
+                            <div>
+                              <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">Product</p>
+                              <p className="text-sm font-medium text-[#1B2A4A]">{charge.product_name}</p>
+                              <p className="text-xs text-[#6B6560] font-mono mt-0.5">{charge.product_code}</p>
+                              <p className="text-xs text-[#6B6560] mt-2">
+                                Variants: <span className="font-medium text-[#1B2A4A]">{charge.product_variants.length}</span>
+                                {charge.product_variants.length > 4 && (
+                                  <span className="text-amber-600 ml-1">
+                                    (+{charge.product_variants.length - 4} extra × €0.50)
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* SKUs */}
+                          {charge.product_variants.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">SKUs</p>
+                              <div className="space-y-1">
+                                {charge.product_variants.map((v, i) => (
+                                  <div key={v.id} className="flex items-center gap-2">
+                                    <span className={`w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center font-bold
+                                      ${i < 4 ? 'bg-[#1B2A4A]' : 'bg-amber-500'}`}>
+                                      {i + 1}
+                                    </span>
+                                    <span className="font-mono text-xs text-[#1B2A4A]">{v.sku || '—'}</span>
+                                    <span className="text-xs text-[#6B6560]">{v.color} {v.size}</span>
+                                    {i >= 4 && <span className="text-xs text-amber-600">+€0.50</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
