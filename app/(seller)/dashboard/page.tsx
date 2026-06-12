@@ -214,7 +214,7 @@ export default function SellerDashboard() {
           </p>
         </Link>
 
-        <Link href="/messages?tab=tickets"
+        <Link href="/messages?tab=issues"
           className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
