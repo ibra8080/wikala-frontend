@@ -162,6 +162,10 @@ export default function AdminStatementsPage() {
   }
 
   const handleMarkPaid = async (id: number) => {
+    const confirmed = window.confirm(
+      'Mark this statement as paid?\n\nThis action confirms that payment has been transferred to the seller.'
+    )
+    if (!confirmed) return
     setActionLoading(id)
     try {
       await api.post(`/finance/admin/statements/${id}/mark-paid/`)

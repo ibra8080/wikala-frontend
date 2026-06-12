@@ -58,6 +58,7 @@ interface FullStatement {
   auto_finalize_date: string | null
   paid_at: string | null
   created_at: string
+  admin_notes: string
   line_items: LineItem[]
   disputes: Dispute[]
   has_dispute: boolean
@@ -560,6 +561,16 @@ export default function StatementsPage() {
                       </table>
                     )}
                   </div>
+
+                  {/* Admin Notes */}
+                  {stmt.admin_notes && (
+                    <div className="px-6 py-4 border-t border-[#E0DDDA] bg-[#FAFAF8]">
+                      <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">
+                        Note from Wikala
+                      </p>
+                      <p className="text-sm text-[#1B2A4A]">{stmt.admin_notes}</p>
+                    </div>
+                  )}
 
                   {/* Disputes */}
                   {stmt.disputes.length > 0 && (
