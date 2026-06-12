@@ -9,6 +9,7 @@ import Link from 'next/link'
 interface Seller {
   id: number
   seller_id: string
+  email: string
   full_name: string
   business_name: string
   bio: string
@@ -169,6 +170,7 @@ export default function AdminSellerDetailPage() {
         <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
           <h2 className="font-semibold text-[#1B2A4A] mb-4">Business Information</h2>
           <Field label="Full Name" value={seller.full_name} />
+          <Field label="Email" value={seller.email ?? '—'} />
           <Field label="Business Name" value={seller.business_name} />
           <Field label="Phone" value={seller.phone} />
           <Field label="WhatsApp" value={seller.whatsapp} />
