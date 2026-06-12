@@ -203,7 +203,7 @@ export default function AdminServicesPage() {
       setEditingService(null)
       await fetchAll()
     } catch {
-      alert('Cannot edit — service may have existing charges.')
+      window.alert('⚠️ Cannot edit — this service has existing charges.')
     } finally { setActionLoading(null) }
   }
   const startEditCode = (code: DiscountCode) => {
@@ -217,7 +217,7 @@ export default function AdminServicesPage() {
       setEditingCode(null)
       await fetchAll()
     } catch {
-      alert('Cannot edit — code may have been used.')
+      window.alert('⚠️ Cannot edit — this code has already been used.')
     } finally { setActionLoading(null) }
   }
   const startEditDiscount = (disc: SellerDiscount) => {
@@ -231,11 +231,15 @@ export default function AdminServicesPage() {
       setEditingDiscount(null)
       await fetchAll()
     } catch {
-      alert('Cannot edit — discount may be linked to charges.')
+      window.alert('⚠️ Cannot edit — this discount is linked to existing charges.')
     } finally { setActionLoading(null) }
   }
 
   const handleChargeStatusChange = async (id: number, status: string) => {
+    const message = status === 'paid'
+      ? 'Mark this charge as paid? This confirms payment has been received.'
+      : 'Waive this charge? The seller will no longer be required to pay this fee.'
+    if (!window.confirm(message)) return
     setActionLoading(id)
     try {
       await api.patch(`/finance/admin/charges/${id}/`, { status })
