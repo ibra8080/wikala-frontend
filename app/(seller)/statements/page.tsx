@@ -270,47 +270,65 @@ export default function StatementsPage() {
   const buildRows = (): SkuRow[] => {
     const rows: SkuRow[] = []
 
-    for (const inv of inventory) {
-      const product = products.find(p =>
-        p.product_code && inv.variant_sku?.startsWith(p.product_code)
-      )
-      if (!product) continue
-
+    for (const product of products) {
       const sortedVariants = [...product.variants].sort((a, b) => a.id - b.id)
-      const skuIndex = sortedVariants.findIndex(v => v.sku === inv.variant_sku)
-      const listingCost = calcListingCost(product, skuIndex)
 
-      const productCharges = charges.filter(c =>
-        c.service_level === 'product' &&
-        c.product_name === product.name_en
-      )
-      const webServicesCost = productCharges.reduce(
-        (sum, c) => sum + parseFloat(c.final_price), 0
-      )
+      if (sortedVariants.length === 0) {
+        rows.push({
+          sku: '—',
+          product_name: product.name_en,
+          product_code: product.product_code,
+          units_available: 0,
+          units_sold: 0,
+          price: parseFloat(product.price),
+          production_cost: parseFloat(product.production_cost ?? '0') || 0,
+          storage_cost: 0,
+          wikala_fee: (parseFloat(product.price) * 0.15) + 1,
+          vat: parseFloat(product.price) * 0.19,
+          listing_cost: calcListingCost(product, 0),
+          web_services_cost: 0,
+          profit: 0,
+        })
+        continue
+      }
 
-      const price = parseFloat(product.price)
-      const productionCost = parseFloat(product.production_cost ?? '0') || 0
-      const storageCost = calcStorageCost(product, inv)
-      const wikalaFee = (price * 0.15) + 1
-      const vat = price * 0.19
-      const totalCosts = productionCost + storageCost + wikalaFee + vat + listingCost + webServicesCost
-      const profit = price - totalCosts
+      for (let skuIndex = 0; skuIndex < sortedVariants.length; skuIndex++) {
+        const variant = sortedVariants[skuIndex]
+        const inv = inventory.find(i => i.variant_sku === variant.sku)
 
-      rows.push({
-        sku: inv.variant_sku,
-        product_name: product.name_en,
-        product_code: product.product_code,
-        units_available: inv.quantity_available,
-        units_sold: inv.quantity_sold,
-        price,
-        production_cost: productionCost,
-        storage_cost: storageCost,
-        wikala_fee: wikalaFee,
-        vat,
-        listing_cost: listingCost,
-        web_services_cost: webServicesCost,
-        profit,
-      })
+        const price = parseFloat(product.price)
+        const productionCost = parseFloat(product.production_cost ?? '0') || 0
+        const storageCost = inv ? calcStorageCost(product, inv) : 0
+        const wikalaFee = (price * 0.15) + 1
+        const vat = price * 0.19
+        const listingCost = calcListingCost(product, skuIndex)
+
+        const productCharges = charges.filter(c =>
+          c.service_level === 'product' && c.product_name === product.name_en
+        )
+        const webServicesCost = productCharges.reduce(
+          (sum, c) => sum + parseFloat(c.final_price), 0
+        )
+
+        const totalCosts = productionCost + storageCost + wikalaFee + vat + listingCost + webServicesCost
+        const profit = price - totalCosts
+
+        rows.push({
+          sku: variant.sku ?? '—',
+          product_name: product.name_en,
+          product_code: product.product_code,
+          units_available: inv?.quantity_available ?? 0,
+          units_sold: inv?.quantity_sold ?? 0,
+          price,
+          production_cost: productionCost,
+          storage_cost: storageCost,
+          wikala_fee: wikalaFee,
+          vat,
+          listing_cost: listingCost,
+          web_services_cost: webServicesCost,
+          profit,
+        })
+      }
     }
 
     return rows
