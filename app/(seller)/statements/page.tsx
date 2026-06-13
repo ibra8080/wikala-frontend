@@ -118,21 +118,6 @@ interface SellerDiscountCode {
   applied_at: string
 }
 
-interface SkuRow {
-  sku: string
-  product_name: string
-  product_code: string
-  units_available: number
-  units_sold: number
-  price: number
-  production_cost: number
-  storage_cost: number
-  wikala_fee: number
-  vat: number
-  listing_cost: number
-  web_services_cost: number
-  profit: number
-}
 
 export default function StatementsPage() {
   const router = useRouter()
@@ -240,102 +225,6 @@ export default function StatementsPage() {
     void fetchAll()
   }, [user, _hasHydrated, router, fetchAll])
 
-  // حساب تكلفة التخزين لكل SKU
-  const calcStorageCost = (product: Product, inv: InventoryItem): number => {
-    if (!inv.arrived_germany_at || inv.quantity_in_germany === 0) return 0
-    const arrivedAt = new Date(inv.arrived_germany_at)
-    const now = new Date()
-    const days = (now.getTime() - arrivedAt.getTime()) / (1000 * 60 * 60 * 24)
-    const months = days / 30
-    const l = parseFloat(product.unit_length_cm) / 100
-    const w = parseFloat(product.unit_width_cm) / 100
-    const h = parseFloat(product.unit_height_cm) / 100
-    const volumeM3 = l * w * h * 1.15 // +15% فراغ
-    return 25 * volumeM3 * inv.quantity_in_germany * months
-  }
-
-  // بناء جدول المتابعة
-  const calcListingCost = (product: Product, skuIndex: number): number => {
-    if (!product.approved_at) return 0
-    const approvedAt = new Date(product.approved_at)
-    const now = new Date()
-    const days = (now.getTime() - approvedAt.getTime()) / (1000 * 60 * 60 * 24)
-    const months = Math.max(0, Math.floor(days / 30) - 1)
-    if (months === 0) return 0
-    if (skuIndex === 0) return 2 * months
-    if (skuIndex <= 4) return 0
-    return 0.5 * months
-  }
-
-  const buildRows = (): SkuRow[] => {
-    const rows: SkuRow[] = []
-
-    for (const product of products) {
-      const sortedVariants = [...product.variants].sort((a, b) => a.id - b.id)
-
-      if (sortedVariants.length === 0) {
-        rows.push({
-          sku: '—',
-          product_name: product.name_en,
-          product_code: product.product_code,
-          units_available: 0,
-          units_sold: 0,
-          price: parseFloat(product.price),
-          production_cost: parseFloat(product.production_cost ?? '0') || 0,
-          storage_cost: 0,
-          wikala_fee: (parseFloat(product.price) * 0.15) + 1,
-          vat: parseFloat(product.price) * 0.19,
-          listing_cost: calcListingCost(product, 0),
-          web_services_cost: 0,
-          profit: 0,
-        })
-        continue
-      }
-
-      for (let skuIndex = 0; skuIndex < sortedVariants.length; skuIndex++) {
-        const variant = sortedVariants[skuIndex]
-        const inv = inventory.find(i => i.variant_sku === variant.sku)
-
-        const price = parseFloat(product.price)
-        const productionCost = parseFloat(product.production_cost ?? '0') || 0
-        const storageCost = inv ? calcStorageCost(product, inv) : 0
-        const wikalaFee = (price * 0.15) + 1
-        const vat = price * 0.19
-        const listingCost = calcListingCost(product, skuIndex)
-
-        const productCharges = charges.filter(c =>
-          c.service_level === 'product' && c.product_name === product.name_en
-        )
-        const webServicesCost = productCharges.reduce(
-          (sum, c) => sum + parseFloat(c.final_price), 0
-        )
-
-        const totalCosts = productionCost + storageCost + wikalaFee + vat + listingCost + webServicesCost
-        const profit = price - totalCosts
-
-        rows.push({
-          sku: variant.sku ?? '—',
-          product_name: product.name_en,
-          product_code: product.product_code,
-          units_available: inv?.quantity_available ?? 0,
-          units_sold: inv?.quantity_sold ?? 0,
-          price,
-          production_cost: productionCost,
-          storage_cost: storageCost,
-          wikala_fee: wikalaFee,
-          vat,
-          listing_cost: listingCost,
-          web_services_cost: webServicesCost,
-          profit,
-        })
-      }
-    }
-
-    return rows
-  }
-
-  const rows = buildRows()
-
   const fmt = (n: number) => `€${n.toFixed(2)}`
 
   if (loading) return (
@@ -378,66 +267,135 @@ export default function StatementsPage() {
 
       {/* Tab: Performance Overview */}
       {activeTab === 'overview' && (
-        <div>
-          {rows.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-[#E0DDDA] p-16 text-center">
-              <p className="text-4xl mb-4">📊</p>
-              <p className="text-lg font-semibold text-[#1B2A4A] mb-2">No data yet</p>
-              <p className="text-sm text-[#6B6560]">
-                Performance data will appear once your products arrive in Germany.
-              </p>
+        <div className="space-y-6">
+          {/* Overall Seller Stats */}
+          <div>
+            <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Overall Performance</p>
+            <div className="grid grid-cols-5 gap-4">
+              {[
+                {
+                  label: 'Registered SKUs',
+                  value: String(products.reduce((sum, p) => sum + (p.variants.length || 1), 0)),
+                },
+                {
+                  label: 'Units in Egypt',
+                  value: String(inventory.reduce((sum, i) => sum + (i.quantity_in_germany === 0 ? 1 : 0), 0)),
+                },
+                {
+                  label: 'Units in Germany',
+                  value: String(inventory.reduce((sum, i) => sum + i.quantity_in_germany, 0)),
+                },
+                {
+                  label: 'Total Sales',
+                  value: fmt(statements
+                    .filter(s => s.status === 'paid')
+                    .reduce((sum, s) => sum + parseFloat(s.total_sales), 0)),
+                },
+                {
+                  label: 'Total Transferred',
+                  value: fmt(statements
+                    .filter(s => s.status === 'paid')
+                    .reduce((sum, s) => sum + parseFloat(s.net_amount), 0)),
+                },
+              ].map(stat => (
+                <div key={stat.label} className="bg-white rounded-2xl border border-[#E0DDDA] p-5">
+                  <p className="text-2xl font-bold text-[#1B2A4A] font-display">{stat.value}</p>
+                  <p className="text-xs text-[#6B6560] mt-1">{stat.label}</p>
+                </div>
+              ))}
             </div>
-          ) : (
-            <>
-              <div className="bg-white rounded-2xl border border-[#E0DDDA] mb-4 overflow-x-auto">
-                <table className="text-sm" style={{ minWidth: '1100px' }}>
-                  <thead>
-                    <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
-                      {[
-                        'Product', 'SKU', 'Units Available', 'Units Sold',
-                        'Production Cost', 'Storage Cost', 'Listing Fee',
-                        'Web Services', 'Wikala Fee (15%+1)',
-                        'VAT (19%)', 'Final Price', 'Est. Profit'
-                      ].map(h => (
-                        <th key={h} className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-4 py-3 whitespace-nowrap">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map(row => (
-                      <tr key={row.sku} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
+          </div>
+
+          {/* Monthly Stats */}
+          <div>
+            <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">
+              {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} — This Month
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              {(() => {
+                const monthStart = new Date()
+                monthStart.setDate(1)
+                monthStart.setHours(0, 0, 0, 0)
+
+                const monthlySales = statements
+                  .filter(s => s.status === 'paid' && new Date(s.period_end) >= monthStart)
+                  .reduce((sum, s) => sum + parseFloat(s.total_sales), 0)
+
+                return [
+                  {
+                    label: 'Sales This Month',
+                    value: fmt(monthlySales),
+                  },
+                  {
+                    label: 'Units in Egypt',
+                    value: String(inventory.reduce((sum, i) => sum + (i.quantity_in_germany === 0 ? 1 : 0), 0)),
+                  },
+                  {
+                    label: 'Units in Germany',
+                    value: String(inventory.reduce((sum, i) => sum + i.quantity_in_germany, 0)),
+                  },
+                ].map(stat => (
+                  <div key={stat.label} className="bg-white rounded-2xl border border-[#E0DDDA] p-5">
+                    <p className="text-2xl font-bold text-[#1B2A4A] font-display">{stat.value}</p>
+                    <p className="text-xs text-[#6B6560] mt-1">{stat.label}</p>
+                  </div>
+                ))
+              })()}
+            </div>
+          </div>
+
+          {/* Products Table */}
+          <div>
+            <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Products Summary</p>
+            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
+                    {['Product', 'SKUs', 'Available', 'Sold', 'Price', 'Status'].map(h => (
+                      <th key={h} className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-4 py-3">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map(product => {
+                    const productInv = inventory.filter(i =>
+                      product.variants.some(v => v.sku === i.variant_sku)
+                    )
+                    const totalAvailable = productInv.reduce((sum, i) => sum + i.quantity_available, 0)
+                    const totalSold = productInv.reduce((sum, i) => sum + i.quantity_sold, 0)
+
+                    return (
+                      <tr key={product.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
                         <td className="px-4 py-3">
-                          <p className="font-medium text-[#1B2A4A] whitespace-nowrap">{row.product_name}</p>
-                          <p className="text-xs text-[#6B6560] font-mono">{row.product_code}</p>
+                          <p className="font-medium text-[#1B2A4A]">{product.name_en}</p>
+                          <p className="text-xs text-[#6B6560] font-mono">{product.product_code}</p>
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-[#6B6560]">{row.sku}</td>
-                        <td className="px-4 py-3 font-semibold text-[#1B2A4A]">{row.units_available}</td>
-                        <td className="px-4 py-3 text-[#6B6560]">{row.units_sold}</td>
-                        <td className="px-4 py-3 text-[#6B6560]">{fmt(row.production_cost)}</td>
-                        <td className="px-4 py-3 text-[#6B6560]">{fmt(row.storage_cost)}</td>
-                        <td className="px-4 py-3 text-[#6B6560]">{fmt(row.listing_cost)}</td>
-                        <td className="px-4 py-3 text-[#6B6560]">{fmt(row.web_services_cost)}</td>
-                        <td className="px-4 py-3 text-[#6B6560]">{fmt(row.wikala_fee)}</td>
-                        <td className="px-4 py-3 text-[#6B6560]">{fmt(row.vat)}</td>
-                        <td className="px-4 py-3 font-semibold text-[#1B2A4A]">{fmt(row.price)}</td>
+                        <td className="px-4 py-3 font-semibold text-[#1B2A4A]">{product.variants.length}</td>
+                        <td className="px-4 py-3 text-[#1B2A4A]">{totalAvailable}</td>
+                        <td className="px-4 py-3 text-[#1B2A4A]">{totalSold}</td>
+                        <td className="px-4 py-3 font-semibold text-[#1B2A4A]">{fmt(parseFloat(product.price))}</td>
                         <td className="px-4 py-3">
-                          <span className={`font-semibold ${row.profit >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                            {fmt(row.profit)}
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border
+                            ${product.status === 'listed' ? 'bg-green-50 text-green-700 border-green-200' :
+                              product.status === 'approved' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                            {product.status.replace('_', ' ')}
                           </span>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    )
+                  })}
+                  {products.length === 0 && (
+                    <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-[#6B6560]">No products registered yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-              <p className="text-xs text-[#6B6560] bg-[#F5F4F0] rounded-xl px-4 py-3 border border-[#E0DDDA]">
-                ⚠️ These figures are preliminary estimates. Final amounts are confirmed monthly by Wikala&apos;s accounting team and reflected in your monthly statement.
-              </p>
-            </>
-          )}
+          <p className="text-xs text-[#6B6560] bg-[#F5F4F0] rounded-xl px-4 py-3 border border-[#E0DDDA]">
+            ⚠️ These figures are preliminary estimates. Final amounts are confirmed monthly in your statement.
+          </p>
         </div>
       )}
 
