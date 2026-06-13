@@ -73,10 +73,22 @@ export default function NewProductPage() {
   // Images
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    if (images.length + files.length > 12) {
-      setError('Maximum 12 images allowed')
+
+    // حد أقصى 10 صور
+    if (images.length + files.length > 10) {
+      setError('Maximum 10 images allowed per product.')
       return
     }
+
+    // فحص حجم كل صورة (5MB max)
+    const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+    for (const file of files) {
+      if (file.size > MAX_SIZE) {
+        setError(`"${file.name}" exceeds the 5MB limit. Please compress the image and try again.`)
+        return
+      }
+    }
+
     const newImages: ProductImage[] = files.map(file => ({
       file,
       preview: URL.createObjectURL(file),
@@ -275,7 +287,7 @@ export default function NewProductPage() {
             {/* Images */}
             <div>
               <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
-                Product Images <span className="text-[#6B6560] font-normal">(min 1, max 12)</span>
+                Product Images <span className="text-[#6B6560] font-normal">(min 1, max 10)</span>
               </label>
               <div className="grid grid-cols-6 gap-3">
                 {images.map((img, i) => (
@@ -289,7 +301,7 @@ export default function NewProductPage() {
                     </button>
                   </div>
                 ))}
-                {images.length < 12 && (
+                {images.length < 10 && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="aspect-square rounded-xl border-2 border-dashed border-[#E0DDDA] hover:border-[#C8952E] transition flex flex-col items-center justify-center text-[#6B6560] hover:text-[#C8952E]"
@@ -308,6 +320,15 @@ export default function NewProductPage() {
                 onChange={handleImageSelect}
               />
               {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+              <div className="mt-3 bg-[#F5F4F0] rounded-xl px-4 py-3 border border-[#E0DDDA]">
+                <p className="text-xs font-semibold text-[#1B2A4A] mb-1">📷 Image Guidelines</p>
+                <ul className="text-xs text-[#6B6560] space-y-0.5">
+                  <li>• Max 10 images per product, max 5MB per image</li>
+                  <li>• Recommended size: 2048 × 2048 px (square 1:1)</li>
+                  <li>• Formats: JPG, PNG, WebP</li>
+                  <li>• White or neutral background preferred</li>
+                </ul>
+              </div>
             </div>
 
             <div className="flex justify-end pt-2">

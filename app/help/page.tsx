@@ -57,6 +57,10 @@ const content = {
             q: 'What are product listing fees?',
             a: 'After the first free month, each product costs €2/month. The first 4 variants per product are free. Each additional variant costs €0.50/month.'
           },
+          {
+            q: 'What are the ideal image specifications for my products?',
+            a: 'For best results on Wikala and Shopify:\n\n• Maximum 10 images per product\n• Maximum 5MB per image\n• Recommended size: 2048 × 2048 pixels (square 1:1 ratio)\n• Minimum size: 800 × 800 pixels\n• Formats accepted: JPG, PNG, WebP\n• Use a white or neutral background\n• Make sure the product is well-lit and centered\n\nImages that meet these specs will display correctly on the Wikala store and sync properly with Shopify.'
+          },
         ]
       },
       {
