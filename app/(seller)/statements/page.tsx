@@ -118,6 +118,12 @@ interface SellerDiscountCode {
   applied_at: string
 }
 
+interface SaleRecordItem {
+  id: number
+  sale_date: string
+  total_amount: string
+  quantity_sold: number
+}
 
 export default function StatementsPage() {
   const router = useRouter()
@@ -141,16 +147,18 @@ export default function StatementsPage() {
   const [disputeItemId, setDisputeItemId] = useState<string>('')
   const [stmtAction, setStmtAction] = useState<number | null>(null)
   const [expandedCharge, setExpandedCharge] = useState<number | null>(null)
+  const [salesRecords, setSalesRecords] = useState<SaleRecordItem[]>([])
 
   const fetchAll = useCallback(async () => {
     try {
-      const [prodRes, invRes, stmtRes, chargesRes, codesRes, svcRes] = await Promise.all([
+      const [prodRes, invRes, stmtRes, chargesRes, codesRes, svcRes, salesRes] = await Promise.all([
         api.get('/products/'),
         api.get('/inventory/'),
         api.get('/finance/statements/'),
         api.get('/finance/charges/'),
         api.get('/finance/codes/'),
         api.get('/finance/services/'),
+        api.get('/finance/sales/'),
       ])
       setProducts(prodRes.data)
       setInventory(invRes.data)
@@ -160,6 +168,7 @@ export default function StatementsPage() {
       setCharges(chargesRes.data)
       setMyCodes(codesRes.data)
       setAvailableServices(svcRes.data.filter((s: WebService) => !s.mandatory))
+      setSalesRecords(salesRes.data)
     } finally {
       setLoading(false)
     }
@@ -317,9 +326,9 @@ export default function StatementsPage() {
                 monthStart.setDate(1)
                 monthStart.setHours(0, 0, 0, 0)
 
-                const monthlySales = statements
-                  .filter(s => s.status === 'paid' && new Date(s.period_end) >= monthStart)
-                  .reduce((sum, s) => sum + parseFloat(s.total_sales), 0)
+                const monthlySales = salesRecords
+                  .filter(r => new Date(r.sale_date) >= monthStart)
+                  .reduce((sum, r) => sum + parseFloat(r.total_amount), 0)
 
                 return [
                   {
