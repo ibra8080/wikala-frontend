@@ -68,7 +68,8 @@ api.interceptors.response.use(
           return api(originalRequest)
         } catch (refreshError) {
           processQueue(refreshError, null)
-          localStorage.clear()
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('refresh_token')
           window.location.href = '/login'
           return Promise.reject(refreshError)
         } finally {
@@ -76,7 +77,8 @@ api.interceptors.response.use(
         }
       } else {
         // No refresh token available
-        localStorage.clear()
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
         window.location.href = '/login'
       }
     }
