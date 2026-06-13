@@ -90,8 +90,12 @@ interface WebServiceCharge {
   service: number
   service_name: string
   service_level: string
+  service_description: string
+  service_price: string
   product: number | null
   product_name: string | null
+  product_code: string | null
+  product_variants: { id: number; sku: string; color: string; size: string }[]
   original_price: string
   discount_amount: string
   final_price: string
@@ -151,6 +155,7 @@ export default function StatementsPage() {
   const [disputeMsg, setDisputeMsg] = useState('')
   const [disputeItemId, setDisputeItemId] = useState<string>('')
   const [stmtAction, setStmtAction] = useState<number | null>(null)
+  const [expandedCharge, setExpandedCharge] = useState<number | null>(null)
 
   const fetchAll = useCallback(async () => {
     try {
@@ -731,7 +736,10 @@ export default function StatementsPage() {
                 </thead>
                 <tbody>
                   {charges.filter(c => c.service_level === 'seller').map(charge => (
-                    <tr key={charge.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
+                    <>
+                    <tr key={charge.id}
+                      className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] cursor-pointer"
+                      onClick={() => setExpandedCharge(expandedCharge === charge.id ? null : charge.id)}>
                       <td className="px-6 py-4 font-medium text-[#1B2A4A]">{charge.service_name}</td>
                       <td className="px-6 py-4 text-[#6B6560]">€{charge.original_price}</td>
                       <td className="px-6 py-4 text-green-600">
@@ -750,6 +758,30 @@ export default function StatementsPage() {
                         {new Date(charge.created_at).toLocaleDateString('en-GB')}
                       </td>
                     </tr>
+                    {expandedCharge === charge.id && (
+                      <tr className="bg-[#FAFAF8] border-b border-[#E0DDDA]">
+                        <td colSpan={6} className="px-6 py-4">
+                          <div className="grid grid-cols-2 gap-6">
+                            <div>
+                              <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">Service Details</p>
+                              <p className="text-sm font-medium text-[#1B2A4A]">{charge.service_name}</p>
+                              {charge.service_description && (
+                                <p className="text-xs text-[#6B6560] mt-1">{charge.service_description}</p>
+                              )}
+                              <p className="text-xs text-[#6B6560] mt-2">
+                                Base price: <span className="font-medium text-[#1B2A4A]">{`€${parseFloat(charge.service_price).toFixed(2)}`}</span>
+                              </p>
+                              <p className="text-xs text-[#6B6560]">
+                                Applied: <span className="font-medium text-[#1B2A4A]">
+                                  {new Date(charge.created_at).toLocaleDateString('en-GB')}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </>
                   ))}
                 </tbody>
               </table>
@@ -773,7 +805,10 @@ export default function StatementsPage() {
                 </thead>
                 <tbody>
                   {charges.filter(c => c.service_level === 'product').map(charge => (
-                    <tr key={charge.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
+                    <>
+                    <tr key={charge.id}
+                      className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] cursor-pointer"
+                      onClick={() => setExpandedCharge(expandedCharge === charge.id ? null : charge.id)}>
                       <td className="px-6 py-4 font-medium text-[#1B2A4A]">{charge.service_name}</td>
                       <td className="px-6 py-4 text-[#6B6560]">{charge.product_name ?? '—'}</td>
                       <td className="px-6 py-4 text-[#6B6560]">€{charge.original_price}</td>
@@ -793,6 +828,63 @@ export default function StatementsPage() {
                         {new Date(charge.created_at).toLocaleDateString('en-GB')}
                       </td>
                     </tr>
+                    {expandedCharge === charge.id && (
+                      <tr className="bg-[#FAFAF8] border-b border-[#E0DDDA]">
+                        <td colSpan={7} className="px-6 py-4">
+                          <div className="grid grid-cols-3 gap-6">
+                            <div>
+                              <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">Service Details</p>
+                              <p className="text-sm font-medium text-[#1B2A4A]">{charge.service_name}</p>
+                              {charge.service_description && (
+                                <p className="text-xs text-[#6B6560] mt-1">{charge.service_description}</p>
+                              )}
+                              <p className="text-xs text-[#6B6560] mt-2">
+                                Base price: <span className="font-medium text-[#1B2A4A]">{`€${parseFloat(charge.service_price).toFixed(2)}`}</span>
+                              </p>
+                              <p className="text-xs text-[#6B6560]">
+                                Applied: <span className="font-medium text-[#1B2A4A]">
+                                  {new Date(charge.created_at).toLocaleDateString('en-GB')}
+                                </span>
+                              </p>
+                            </div>
+                            {charge.product_name && (
+                              <div>
+                                <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">Product</p>
+                                <p className="text-sm font-medium text-[#1B2A4A]">{charge.product_name}</p>
+                                <p className="text-xs text-[#6B6560] font-mono mt-0.5">{charge.product_code}</p>
+                                <p className="text-xs text-[#6B6560] mt-2">
+                                  Variants: <span className="font-medium text-[#1B2A4A]">{charge.product_variants?.length ?? 0}</span>
+                                  {(charge.product_variants?.length ?? 0) > 4 && (
+                                    <span className="text-amber-600 ml-1">
+                                      (+{(charge.product_variants?.length ?? 0) - 4} extra × €0.50)
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            )}
+                            {(charge.product_variants?.length ?? 0) > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">SKUs</p>
+                                <div className="space-y-1">
+                                  {charge.product_variants.map((v, i) => (
+                                    <div key={v.id} className="flex items-center gap-2">
+                                      <span className={`w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center font-bold
+                                        ${i < 4 ? 'bg-[#1B2A4A]' : 'bg-amber-500'}`}>
+                                        {i + 1}
+                                      </span>
+                                      <span className="font-mono text-xs text-[#1B2A4A]">{v.sku || '—'}</span>
+                                      <span className="text-xs text-[#6B6560]">{v.color} {v.size}</span>
+                                      {i >= 4 && <span className="text-xs text-amber-600">+€0.50</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </>
                   ))}
                 </tbody>
               </table>
