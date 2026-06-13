@@ -219,6 +219,15 @@ export default function AdminStatementsPage() {
     } catch { alert('Failed to update notes.') }
   }
 
+  const handleDeleteDraft = async (id: number) => {
+    if (!window.confirm('Delete this draft statement? This cannot be undone.')) return
+    setActionLoading(id)
+    try {
+      await api.delete(`/finance/admin/statements/${id}/`)
+      await fetchAll()
+    } finally { setActionLoading(null) }
+  }
+
   const handleResolveDispute = async (stmtId: number, disputeId: number, newStatus: string) => {
     try {
       await api.patch(`/finance/admin/statements/${stmtId}/disputes/${disputeId}/resolve/`, {
@@ -336,10 +345,16 @@ export default function AdminStatementsPage() {
                   <p className={`font-semibold ${parseFloat(stmt.net_amount) >= 0 ? 'text-green-600' : 'text-red-500'}`}>{fmt(stmt.net_amount)}</p>
                 </div>
                 {stmt.status === 'draft' && (
-                  <button onClick={() => handleSend(stmt.id)} disabled={actionLoading === stmt.id}
-                    className="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-100 disabled:opacity-50 transition">
-                    Send to Seller
-                  </button>
+                  <>
+                    <button onClick={() => handleSend(stmt.id)} disabled={actionLoading === stmt.id}
+                      className="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-100 disabled:opacity-50 transition">
+                      Send to Seller
+                    </button>
+                    <button onClick={() => handleDeleteDraft(stmt.id)} disabled={actionLoading === stmt.id}
+                      className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50">
+                      Delete
+                    </button>
+                  </>
                 )}
                 {stmt.status === 'accepted' && (
                   <button onClick={() => handleMarkPaid(stmt.id)} disabled={actionLoading === stmt.id}
