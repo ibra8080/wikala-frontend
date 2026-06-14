@@ -90,6 +90,7 @@ export default function RegisterPage() {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     }))
+    if (name === 'business_name') setSubmitError('')
   }
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -292,7 +293,7 @@ export default function RegisterPage() {
             <div>
               <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">Business Name</label>
               <input name="business_name" value={form.business_name}
-                onChange={handleChange} onBlur={handleBlur}
+                onChange={handleChange} onBlur={(e) => { handleBlur(e); void checkBusinessName(e.target.value) }}
                 placeholder="Your brand or shop name"
                 className={inputClass('business_name')} />
               {fieldErrors.business_name && <p className="text-red-500 text-xs mt-1">{fieldErrors.business_name}</p>}
@@ -347,7 +348,7 @@ export default function RegisterPage() {
                 className="flex-1 border border-[#E0DDDA] text-[#1B2A4A] rounded-lg py-2.5 text-sm font-medium hover:bg-[#F5F4F0] transition">
                 ← Back
               </button>
-              <button type="submit" disabled={loading}
+              <button type="submit" disabled={loading || !!submitError}
                 className="flex-1 bg-[#C8952E] text-white rounded-lg py-2.5 text-sm font-medium hover:bg-[#b07d26] disabled:opacity-50 transition">
                 {loading ? 'Creating account...' : 'Create Account'}
               </button>
