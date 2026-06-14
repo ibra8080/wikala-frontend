@@ -135,6 +135,13 @@ export default function RegisterPage() {
     setLoading(true)
     setSubmitError('')
     try {
+      // Validate all unique fields BEFORE creating anything
+      await api.post('/users/validate/', {
+        email: form.email,
+        username: form.username,
+        business_name: form.business_name,
+      })
+
       // 1. Create user
       await api.post('/users/register/', {
         email: form.email,
