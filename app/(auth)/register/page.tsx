@@ -67,10 +67,22 @@ export default function RegisterPage() {
       const error = err as { response?: { data?: Record<string, string[]> } }
       const data = error.response?.data
       if (data) {
-        const firstError = Object.values(data)[0]
-        setError(Array.isArray(firstError) ? firstError[0] : 'An error occurred.')
+        const fieldNames: Record<string, string> = {
+          email: 'البريد الإلكتروني',
+          username: 'اسم المستخدم',
+          password: 'كلمة المرور',
+          business_name: 'اسم النشاط التجاري',
+          non_field_errors: '',
+        }
+        const messages = Object.entries(data)
+          .map(([field, msgs]) => {
+            const label = fieldNames[field] ?? field
+            return label ? `${label}: ${msgs.join(', ')}` : msgs.join(', ')
+          })
+          .join(' | ')
+        setError(messages || 'حدث خطأ، يرجى المحاولة مرة أخرى')
       } else {
-        setError('An error occurred. Please try again.')
+        setError('حدث خطأ في الاتصال، يرجى المحاولة مرة أخرى')
       }
     } finally {
       setLoading(false)
