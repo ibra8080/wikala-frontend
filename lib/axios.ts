@@ -38,6 +38,10 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
+    const isAuthPage = typeof window !== 'undefined' &&
+      (window.location.pathname === '/login' || window.location.pathname === '/register')
+    if (isAuthPage) return Promise.reject(error)
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       // If already refreshing, queue this request
       if (isRefreshing) {
