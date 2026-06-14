@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/axios'
+import { useAuthStore } from '@/store/auth'
 
 // --- Types ---
 type FieldErrors = Record<string, string>
@@ -158,7 +159,14 @@ export default function RegisterPage() {
         referral_source: form.referral_source,
       }, { headers: { Authorization: `Bearer ${loginRes.data.access}` } })
 
-      router.push('/login?registered=true')
+      // Store tokens + auto-login
+      const { access, refresh } = loginRes.data
+      const meRes = await api.get('/users/me/', {
+        headers: { Authorization: `Bearer ${access}` },
+      })
+      const { setAuth } = useAuthStore.getState()
+      setAuth(meRes.data, access, refresh)
+      router.push('/welcome')
     } catch (err: unknown) {
       const e = err as { response?: { data?: Record<string, string[]> } }
       if (e.response?.data) {
