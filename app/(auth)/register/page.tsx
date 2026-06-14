@@ -96,6 +96,20 @@ export default function RegisterPage() {
     setTouched(prev => ({ ...prev, [e.target.name]: true }))
   }
 
+  const checkBusinessName = async (name: string) => {
+    if (!name.trim()) return
+    try {
+      await api.post('/users/validate/', { business_name: name })
+      setSubmitError('')
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: Record<string, string | string[]> } }
+      if (e.response?.data?.business_name) {
+        const msg = e.response.data.business_name
+        setSubmitError(`Business name: ${Array.isArray(msg) ? msg.join(' ') : msg}`)
+      }
+    }
+  }
+
   // Step 1 → validate locally + check uniqueness on server
   const handleNext = async () => {
     // Touch all step 1 fields
@@ -123,7 +137,7 @@ export default function RegisterPage() {
     }
   }
 
-  // Final submit — register user + seller in sequence
+  // Final submit — single atomic call
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setTouched(prev => ({
@@ -135,27 +149,12 @@ export default function RegisterPage() {
     setLoading(true)
     setSubmitError('')
     try {
-      // Validate all unique fields BEFORE creating anything
-      await api.post('/users/validate/', {
-        email: form.email,
-        username: form.username,
-        business_name: form.business_name,
-      })
-
-      // 1. Create user
-      await api.post('/users/register/', {
+      // Single atomic call — creates user + seller profile together
+      await api.post('/users/register-full/', {
         email: form.email,
         username: form.username,
         password: form.password,
         password2: form.password2,
-      })
-      // 2. Login to get token
-      const loginRes = await api.post('/users/login/', {
-        email: form.email,
-        password: form.password,
-      })
-      // 3. Create seller profile
-      await api.post('/sellers/register/', {
         full_name: form.full_name,
         business_name: form.business_name,
         phone: form.phone,
@@ -164,15 +163,18 @@ export default function RegisterPage() {
         city: form.city,
         exported_before: form.exported_before,
         referral_source: form.referral_source,
-      }, { headers: { Authorization: `Bearer ${loginRes.data.access}` } })
+      })
 
-      // Store tokens + auto-login
+      // Login + store tokens
+      const loginRes = await api.post('/users/login/', {
+        email: form.email,
+        password: form.password,
+      })
       const { access, refresh } = loginRes.data
       const meRes = await api.get('/users/me/', {
         headers: { Authorization: `Bearer ${access}` },
       })
-      const { setAuth } = useAuthStore.getState()
-      setAuth(meRes.data, access, refresh)
+      useAuthStore.getState().setAuth(meRes.data, access, refresh)
       router.push('/welcome')
     } catch (err: unknown) {
       const e = err as { response?: { data?: Record<string, string[]> } }
