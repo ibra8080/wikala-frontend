@@ -25,10 +25,10 @@ const content = {
         title: 'Bank Transfer',
         desc: 'Transfer to our account and send the receipt to our email.',
         details: [
-          { label: 'Account Name', value: 'Wikala GmbH' },
-          { label: 'IBAN', value: 'DE89 3704 0044 0532 0130 00' },
-          { label: 'Bank', value: 'Commerzbank' },
-          { label: 'BIC', value: 'COBADEFFXXX' },
+          { label: 'Account Name', value: 'IBRAHIM MOHAMED AHMED ABUSAIF' },
+          { label: 'IBAN', value: 'DE35 1001 1001 2154 5930 60' },
+          { label: 'Bank', value: 'N26 Bank' },
+          { label: 'BIC', value: 'NTSBDEB1XXX' },
         ],
       },
       instapay: {
@@ -77,10 +77,10 @@ const content = {
         title: 'تحويل بنكي',
         desc: 'حوّل إلى حسابنا وأرسل الإيصال على إيميلنا.',
         details: [
-          { label: 'اسم الحساب', value: 'Wikala GmbH' },
-          { label: 'IBAN', value: 'DE89 3704 0044 0532 0130 00' },
-          { label: 'البنك', value: 'Commerzbank' },
-          { label: 'BIC', value: 'COBADEFFXXX' },
+          { label: 'اسم الحساب', value: 'IBRAHIM MOHAMED AHMED ABUSAIF' },
+          { label: 'IBAN', value: 'DE35 1001 1001 2154 5930 60' },
+          { label: 'البنك', value: 'N26 Bank' },
+          { label: 'BIC', value: 'NTSBDEB1XXX' },
         ],
       },
       instapay: {
