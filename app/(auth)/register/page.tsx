@@ -225,6 +225,7 @@ export default function RegisterPage() {
               <input name="email" type="email" value={form.email}
                 onChange={handleChange} onBlur={handleBlur}
                 placeholder="you@example.com"
+                autoComplete="username"
                 className={inputClass('email')} />
               {fieldErrors.email && <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>}
             </div>
@@ -234,6 +235,7 @@ export default function RegisterPage() {
               <input name="username" value={form.username}
                 onChange={handleChange} onBlur={handleBlur}
                 placeholder="e.g. cairo_crafts"
+                autoComplete="off"
                 className={inputClass('username')} />
               {fieldErrors.username && <p className="text-red-500 text-xs mt-1">{fieldErrors.username}</p>}
             </div>
@@ -244,6 +246,7 @@ export default function RegisterPage() {
                 <input name="password" type={showPass ? 'text' : 'password'} value={form.password}
                   onChange={handleChange} onBlur={handleBlur}
                   placeholder="Min. 8 characters"
+                  autoComplete="new-password"
                   className={inputClass('password') + ' pr-10'} />
                 <button type="button" onClick={() => setShowPass(p => !p)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B6560] hover:text-[#1B2A4A] text-xs">
@@ -259,6 +262,7 @@ export default function RegisterPage() {
                 <input name="password2" type={showPass2 ? 'text' : 'password'} value={form.password2}
                   onChange={handleChange} onBlur={handleBlur}
                   placeholder="Repeat your password"
+                  autoComplete="new-password"
                   className={inputClass('password2') + ' pr-10'} />
                 <button type="button" onClick={() => setShowPass2(p => !p)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B6560] hover:text-[#1B2A4A] text-xs">
