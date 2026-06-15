@@ -123,10 +123,10 @@ export default function RegisterPage() {
       await api.post('/users/validate/', { email: form.email, username: form.username })
       setStep(2)
     } catch (err: unknown) {
-      const e = err as { response?: { data?: Record<string, string | string[]> } }
-      if (e.response?.data) {
+      const e = err as { response?: { data?: unknown } }
+      if (e.response?.data && typeof e.response.data === 'object' && !Array.isArray(e.response.data)) {
         const label: Record<string, string> = { email: 'Email', username: 'Username' }
-        const msgs = Object.entries(e.response.data)
+        const msgs = Object.entries(e.response.data as Record<string, string | string[]>)
           .map(([field, msg]) => `${label[field] ?? field}: ${Array.isArray(msg) ? msg.join(' ') : msg}`)
           .join(' | ')
         setSubmitError(msgs)
@@ -178,11 +178,11 @@ export default function RegisterPage() {
       useAuthStore.getState().setAuth(meRes.data, access, refresh)
       router.push('/welcome')
     } catch (err: unknown) {
-      const e = err as { response?: { data?: Record<string, string[]> } }
-      if (e.response?.data) {
-        setSubmitError(Object.values(parseApiErrors(e.response.data)).join(' | '))
+      const e = err as { response?: { data?: unknown } }
+      if (e.response?.data && typeof e.response.data === 'object' && !Array.isArray(e.response.data)) {
+        setSubmitError(Object.values(parseApiErrors(e.response.data as Record<string, string[]>)).join(' | '))
       } else {
-        setSubmitError('An error occurred. Please try again.')
+        setSubmitError('Registration failed. Please try again or contact support.')
       }
     } finally {
       setLoading(false)
