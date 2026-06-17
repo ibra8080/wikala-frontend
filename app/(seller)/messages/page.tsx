@@ -79,6 +79,7 @@ function MessagesContent() {
   })
   const selectedConvRef  = useRef<HTMLButtonElement | null>(null)
   const selectedIssueRef = useRef<HTMLButtonElement | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
 
   const fetchAll = useCallback(async () => {
     try {
@@ -128,28 +129,53 @@ function MessagesContent() {
     selectedIssueRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selectedIssue?.id])
 
+  useEffect(() => {
+    wsRef.current?.close()
+    wsRef.current = null
+    if (!selectedConv) return
+    const token = localStorage.getItem('access_token')
+    if (!token) return
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+    const wsBase = apiUrl.replace(/\/api$/, '').replace(/^http/, 'ws')
+    const ws = new WebSocket(`${wsBase}/ws/chat/${selectedConv.id}/?token=${token}`)
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data as string) as Message
+      setSelectedConv(prev => prev ? { ...prev, messages: [...(prev.messages ?? []), data] } : prev)
+    }
+    wsRef.current = ws
+    return () => { ws.close(); wsRef.current = null }
+  }, [selectedConv?.id])
+
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return
-    setSending(true)
-    try {
-      if (selectedConv) {
-        await api.post(`/communication/conversations/${selectedConv.id}/messages/`, {
-          content: newMessage
-        })
+    if (selectedConv) {
+      const ws = wsRef.current
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ content: newMessage }))
+        setNewMessage('')
+        return
+      }
+      setSending(true)
+      try {
+        await api.post(`/communication/conversations/${selectedConv.id}/messages/`, { content: newMessage })
         const res = await api.get(`/communication/conversations/${selectedConv.id}/`)
         setSelectedConv(res.data)
         await fetchAll()
-      } else if (selectedIssue) {
-        await api.post(`/communication/issues/${selectedIssue.id}/messages/`, {
-          content: newMessage
-        })
+        setNewMessage('')
+      } finally {
+        setSending(false)
+      }
+    } else if (selectedIssue) {
+      setSending(true)
+      try {
+        await api.post(`/communication/issues/${selectedIssue.id}/messages/`, { content: newMessage })
         const res = await api.get(`/communication/issues/${selectedIssue.id}/`)
         setSelectedIssue(res.data)
         await fetchAll()
+        setNewMessage('')
+      } finally {
+        setSending(false)
       }
-      setNewMessage('')
-    } finally {
-      setSending(false)
     }
   }
 
