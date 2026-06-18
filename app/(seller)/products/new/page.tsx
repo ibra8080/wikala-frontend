@@ -35,8 +35,10 @@ export default function NewProductPage() {
   const [form, setForm] = useState({
     name_en: '',
     name_ar: '',
+    name_de: '',
     description_en: '',
     description_ar: '',
+    description_de: '',
     price: '',
     category: '',
     // Technical specs
@@ -148,8 +150,10 @@ export default function NewProductPage() {
       const productRes = await api.post('/products/', {
         name_en: form.name_en,
         name_ar: form.name_ar,
+        name_de: form.name_de || '',
         description_en: form.description_en || '',
         description_ar: form.description_ar || '',
+        description_de: form.description_de || '',
         price: parseFloat(form.price),
         brand_name: form.brand_name,
         model_number: form.model_number,
@@ -228,7 +232,7 @@ export default function NewProductPage() {
         {/* Step 1 — Product Info */}
         {step === 1 && (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-3 gap-5">
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Product Name (English) <span className="text-red-400">*</span>
@@ -243,9 +247,16 @@ export default function NewProductPage() {
                 <input name="name_ar" value={form.name_ar} onChange={handleChange}
                   placeholder="مثال: جلباب قطني رجالي" dir="rtl" className={inputClass} />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
+                  Product Name (German) <span className="text-[#6B6560] text-xs font-normal">optional</span>
+                </label>
+                <input name="name_de" value={form.name_de} onChange={handleChange}
+                  placeholder="z.B. Herren-Baumwoll-Galabeya" className={inputClass} />
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-3 gap-5">
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">Description (English)</label>
                 <textarea name="description_en" value={form.description_en} onChange={handleChange}
@@ -256,6 +267,19 @@ export default function NewProductPage() {
                 <textarea name="description_ar" value={form.description_ar} onChange={handleChange}
                   rows={4} dir="rtl" placeholder="اكتب وصف المنتج..." className={inputClass + ' resize-none'} />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
+                  Description (German) <span className="text-[#6B6560] text-xs font-normal">optional</span>
+                </label>
+                <textarea name="description_de" value={form.description_de} onChange={handleChange}
+                  rows={4} placeholder="Produkt beschreiben..." className={inputClass + ' resize-none'} />
+              </div>
+            </div>
+
+            <div className="bg-[#F5F4F0] border border-[#E0DDDA] rounded-lg px-4 py-3">
+              <p className="text-sm text-[#6B6560]">
+                <span className="text-[#C8952E]">ℹ</span> German fields are optional. If left empty, Wikala will translate the English content for German customers.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-5">
