@@ -137,6 +137,29 @@ export default function AdminProductsPage() {
     }
   }
 
+  const [exporting, setExporting] = useState(false)
+
+  const handleShopifyExport = async () => {
+    setExporting(true)
+    try {
+      const res = await api.get('/products/admin/shopify-export/', {
+        responseType: 'blob',
+      })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'wikala_shopify_export.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      alert('Export failed. Please try again.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const filtered = products.filter(p => filter === 'all' ? true : p.status === filter)
 
   if (loading) return (
@@ -147,9 +170,18 @@ export default function AdminProductsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#1B2A4A]">Products</h1>
-        <p className="text-sm text-[#6B6560] mt-1">{products.length} total products</p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1B2A4A]">Products</h1>
+          <p className="text-sm text-[#6B6560] mt-1">{products.length} total products</p>
+        </div>
+        <button
+          onClick={handleShopifyExport}
+          disabled={exporting}
+          className="px-4 py-2 rounded-lg text-sm font-medium bg-[#C8952E] text-white hover:bg-[#b3842a] transition disabled:opacity-50"
+        >
+          {exporting ? 'Exporting...' : '↓ Export to Shopify CSV'}
+        </button>
       </div>
 
       {/* Tabs */}
