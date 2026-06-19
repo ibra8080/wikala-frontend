@@ -138,11 +138,19 @@ export default function AdminProductsPage() {
   }
 
   const [exporting, setExporting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
 
   const handleShopifyExport = async () => {
     setExporting(true)
     try {
-      const res = await api.get('/products/admin/shopify-export/', {
+      const query = selectedIds.length ? `?ids=${selectedIds.join(',')}` : ''
+      const res = await api.get(`/products/admin/shopify-export/${query}`, {
         responseType: 'blob',
       })
       const url = window.URL.createObjectURL(new Blob([res.data]))
@@ -177,10 +185,14 @@ export default function AdminProductsPage() {
         </div>
         <button
           onClick={handleShopifyExport}
-          disabled={exporting}
+          disabled={exporting || selectedIds.length === 0}
           className="px-4 py-2 rounded-lg text-sm font-medium bg-[#C8952E] text-white hover:bg-[#b3842a] transition disabled:opacity-50"
         >
-          {exporting ? 'Exporting...' : '↓ Export to Shopify CSV'}
+          {exporting
+            ? 'Exporting...'
+            : selectedIds.length
+              ? `↓ Export ${selectedIds.length} to Shopify CSV`
+              : '↓ Select products to export'}
         </button>
       </div>
 
@@ -203,6 +215,7 @@ export default function AdminProductsPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
+              <th className="px-4 py-4 w-10" />
               <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Product</th>
               <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Code</th>
               <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Price</th>
@@ -215,6 +228,14 @@ export default function AdminProductsPage() {
             {filtered.map(product => (
               <>
                 <tr key={product.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition">
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(product.id)}
+                      onChange={() => toggleSelect(product.id)}
+                      className="w-4 h-4 accent-[#C8952E] cursor-pointer"
+                    />
+                  </td>
                   <td className="px-6 py-4">
                     <p className="text-sm font-medium text-[#1B2A4A]">{product.name_en}</p>
                     <p className="text-xs text-[#6B6560] mt-0.5">{product.name_ar}</p>
