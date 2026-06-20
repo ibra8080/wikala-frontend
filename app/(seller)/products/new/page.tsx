@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/axios'
 import Link from 'next/link'
@@ -31,6 +31,14 @@ export default function NewProductPage() {
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [categories, setCategories] = useState<{ id: number; name_en: string; name_ar: string }[]>([])
+
+  useEffect(() => {
+    api.get('/products/categories/')
+      .then(res => setCategories(res.data))
+      .catch(() => setCategories([]))
+  }, [])
 
   const [form, setForm] = useState({
     name_en: '',
@@ -155,6 +163,7 @@ export default function NewProductPage() {
         description_ar: form.description_ar || '',
         description_de: form.description_de || '',
         price: parseFloat(form.price),
+        category: form.category ? parseInt(form.category) : null,
         brand_name: form.brand_name,
         model_number: form.model_number,
         materials: form.materials,
@@ -297,13 +306,9 @@ export default function NewProductPage() {
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">Category</label>
                 <select name="category" value={form.category} onChange={handleChange} className={inputClass}>
                   <option value="">Select category...</option>
-                  <option value="apparel">Apparel</option>
-                  <option value="textiles">Textiles & Home Linens</option>
-                  <option value="gifts">Gifts & Décor</option>
-                  <option value="cosmetics">Cosmetics & Beauty</option>
-                  <option value="handmade">Handmade & Artisan</option>
-                  <option value="leather">Leather Goods & Footwear</option>
-                  <option value="electronics">Electronics</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name_en}</option>
+                  ))}
                 </select>
               </div>
             </div>
