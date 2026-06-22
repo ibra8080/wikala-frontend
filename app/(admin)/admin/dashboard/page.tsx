@@ -36,6 +36,31 @@ interface SalesStats {
 const fmtEur = (n: number) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n || 0)
 
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <h2 className="text-sm font-semibold text-[#6B6560] uppercase tracking-wide mb-3">{children}</h2>
+)
+
+const StatCard = ({ label, value, href, urgent }: {
+  label: string; value: string | number; href: string; urgent?: boolean
+}) => {
+  const isUrgent = urgent && Number(value) > 0
+  return (
+    <Link
+      href={href}
+      className={`bg-white rounded-2xl border p-6 hover:border-[#C8952E] transition group
+        ${isUrgent ? 'border-[#C8952E]' : 'border-[#E0DDDA]'}`}
+    >
+      <p className={`text-4xl font-bold font-display
+        ${isUrgent ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
+        {value}
+      </p>
+      <p className="text-sm text-[#6B6560] mt-2 group-hover:text-[#C8952E] transition">
+        {label}
+      </p>
+    </Link>
+  )
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const { user, _hasHydrated } = useAuthStore()
@@ -121,31 +146,6 @@ export default function AdminDashboard() {
     { label: 'Unread Messages', value: unreadConvs.length, href: '/admin/messages?tab=conversations' },
     { label: 'Open Tickets', value: activeIssues.length, href: '/admin/messages?tab=issues' },
   ]
-
-  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <h2 className="text-sm font-semibold text-[#6B6560] uppercase tracking-wide mb-3">{children}</h2>
-  )
-
-  const StatCard = ({ label, value, href, urgent }: {
-    label: string; value: string | number; href: string; urgent?: boolean
-  }) => {
-    const isUrgent = urgent && Number(value) > 0
-    return (
-      <Link
-        href={href}
-        className={`bg-white rounded-2xl border p-6 hover:border-[#C8952E] transition group
-          ${isUrgent ? 'border-[#C8952E]' : 'border-[#E0DDDA]'}`}
-      >
-        <p className={`text-4xl font-bold font-display
-          ${isUrgent ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
-          {value}
-        </p>
-        <p className="text-sm text-[#6B6560] mt-2 group-hover:text-[#C8952E] transition">
-          {label}
-        </p>
-      </Link>
-    )
-  }
 
   return (
     <div>
