@@ -28,12 +28,21 @@ interface Stats {
   awaiting_shipment: number
 }
 
+interface SalesStats {
+  today: { orders: number; units: number; revenue: number }
+  month: { orders: number; units: number; revenue: number }
+}
+
+const fmtEur = (n: number) =>
+  new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n || 0)
+
 export default function AdminDashboard() {
   const router = useRouter()
   const { user, _hasHydrated } = useAuthStore()
   const [stats, setStats] = useState<Stats | null>(null)
+  const [sales, setSales] = useState<SalesStats | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
-  const [issues, setIssues]               = useState<Issue[]>([])
+  const [issues, setIssues] = useState<Issue[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -47,13 +56,15 @@ export default function AdminDashboard() {
       api.get('/inventory/admin/shipment-requests/'),
       api.get('/communication/conversations/'),
       api.get('/communication/issues/'),
-    ]).then(([sellersRes, productsRes, shipmentsRes, convsRes, issuesRes]) => {
+      api.get('/finance/admin/sales/stats/'),
+    ]).then(([sellersRes, productsRes, shipmentsRes, convsRes, issuesRes, salesRes]) => {
       const sellers = sellersRes.data
       const products = productsRes.data
       const shipments = shipmentsRes.data
 
       setConversations(convsRes.data)
       setIssues(issuesRes.data)
+      setSales(salesRes.data)
 
       setStats({
         pending_sellers: sellers.filter((s: { status: string }) => s.status === 'pending').length,
@@ -77,25 +88,64 @@ export default function AdminDashboard() {
     </div>
   )
 
-  const cards = [
-    { label: 'Pending Sellers', value: stats?.pending_sellers ?? 0, href: '/admin/sellers', urgent: true },
-    { label: 'Pending Products', value: stats?.pending_products ?? 0, href: '/admin/products', urgent: true },
-    { label: 'Pending Shipments', value: stats?.pending_shipments ?? 0, href: '/admin/shipments', urgent: true },
-    { label: 'Awaiting Shipment', value: stats?.awaiting_shipment ?? 0, href: '/admin/products', urgent: false },
-    { label: 'In Egypt Warehouse', value: stats?.in_warehouse_egypt ?? 0, href: '/admin/products', urgent: false },
-    { label: 'In Transit', value: stats?.in_transit ?? 0, href: '/admin/products', urgent: false },
-    { label: 'In Germany Warehouse', value: stats?.in_warehouse_germany ?? 0, href: '/admin/products', urgent: false },
-    { label: 'Active Sellers', value: stats?.total_sellers ?? 0, href: '/admin/sellers', urgent: false },
-    { label: 'Active Products', value: stats?.total_products ?? 0, href: '/admin/products', urgent: false },
-  ]
-
-  const adminId      = user?.id ?? -1
-  const unreadConvs  = conversations.filter(c =>
+  const adminId = user?.id ?? -1
+  const unreadConvs = conversations.filter(c =>
     c.messages?.some(m => m.sender !== adminId && !m.is_read)
   )
-  const activeIssues     = issues.filter(i => i.status === 'open' || i.status === 'in_progress')
-  const firstUnreadConv  = unreadConvs[0]
-  const firstActiveIssue = activeIssues[0]
+  const activeIssues = issues.filter(i => i.status === 'open' || i.status === 'in_progress')
+
+  // ── Card groups ──
+  const salesCards = [
+    { label: "Today's Orders", value: String(sales?.today.orders ?? 0), href: '/admin/sales' },
+    { label: "Today's Revenue", value: fmtEur(sales?.today.revenue ?? 0), href: '/admin/sales' },
+    { label: 'Month Orders', value: String(sales?.month.orders ?? 0), href: '/admin/sales' },
+    { label: 'Month Revenue', value: fmtEur(sales?.month.revenue ?? 0), href: '/admin/sales' },
+  ]
+
+  const actionCards = [
+    { label: 'Pending Sellers', value: stats?.pending_sellers ?? 0, href: '/admin/sellers' },
+    { label: 'Pending Products', value: stats?.pending_products ?? 0, href: '/admin/products' },
+    { label: 'Pending Shipments', value: stats?.pending_shipments ?? 0, href: '/admin/shipments' },
+  ]
+
+  const pipelineCards = [
+    { label: 'Awaiting Shipment', value: stats?.awaiting_shipment ?? 0, href: '/admin/products' },
+    { label: 'In Egypt Warehouse', value: stats?.in_warehouse_egypt ?? 0, href: '/admin/products' },
+    { label: 'In Transit', value: stats?.in_transit ?? 0, href: '/admin/products' },
+    { label: 'In Germany Warehouse', value: stats?.in_warehouse_germany ?? 0, href: '/admin/products' },
+    { label: 'Active Products', value: stats?.total_products ?? 0, href: '/admin/products' },
+  ]
+
+  const overviewCards = [
+    { label: 'Active Sellers', value: stats?.total_sellers ?? 0, href: '/admin/sellers' },
+    { label: 'Unread Messages', value: unreadConvs.length, href: '/admin/messages?tab=conversations' },
+    { label: 'Open Tickets', value: activeIssues.length, href: '/admin/messages?tab=issues' },
+  ]
+
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <h2 className="text-sm font-semibold text-[#6B6560] uppercase tracking-wide mb-3">{children}</h2>
+  )
+
+  const StatCard = ({ label, value, href, urgent }: {
+    label: string; value: string | number; href: string; urgent?: boolean
+  }) => {
+    const isUrgent = urgent && Number(value) > 0
+    return (
+      <Link
+        href={href}
+        className={`bg-white rounded-2xl border p-6 hover:border-[#C8952E] transition group
+          ${isUrgent ? 'border-[#C8952E]' : 'border-[#E0DDDA]'}`}
+      >
+        <p className={`text-4xl font-bold font-display
+          ${isUrgent ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
+          {value}
+        </p>
+        <p className="text-sm text-[#6B6560] mt-2 group-hover:text-[#C8952E] transition">
+          {label}
+        </p>
+      </Link>
+    )
+  }
 
   return (
     <div>
@@ -104,64 +154,40 @@ export default function AdminDashboard() {
         <p className="text-sm text-[#6B6560] mt-1">Wikala Operations Overview</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        {cards.map((card) => (
-          <Link
-            key={card.label}
-            href={card.href}
-            className={`bg-white rounded-2xl border p-6 hover:border-[#C8952E] transition group
-              ${card.urgent && card.value > 0 ? 'border-[#C8952E]' : 'border-[#E0DDDA]'}`}
-          >
-            <p className={`text-3xl font-bold font-display
-              ${card.urgent && card.value > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
-              {card.value}
-            </p>
-            <p className="text-sm text-[#6B6560] mt-1 group-hover:text-[#C8952E] transition">
-              {card.label}
-            </p>
-          </Link>
-        ))}
-      </div>
+      {/* Section 1 — Sales */}
+      <section className="mb-8">
+        <SectionTitle>💰 Sales</SectionTitle>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {salesCards.map((c) => <StatCard key={c.label} {...c} />)}
+        </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <Link href="/admin/messages?tab=conversations"
-          className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className={`text-2xl font-bold ${unreadConvs.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
-                {unreadConvs.length}
-              </span>
-              {unreadConvs.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
-              )}
-            </div>
-            <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
-          </div>
-          <p className="text-sm font-semibold text-[#1B2A4A]">
-            {unreadConvs.length > 0 ? 'Unread Messages' : 'No new messages'}
-          </p>
-        </Link>
+      {/* Section 2 — Needs Action */}
+      <section className="mb-8">
+        <SectionTitle>🔴 Needs Action</SectionTitle>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {actionCards.map((c) => <StatCard key={c.label} {...c} urgent />)}
+        </div>
+      </section>
 
-        <Link href="/admin/messages?tab=issues"
-          className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className={`text-2xl font-bold ${activeIssues.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
-                {activeIssues.length}
-              </span>
-              {activeIssues.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
-              )}
-            </div>
-            <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
-          </div>
-          <p className="text-sm font-semibold text-[#1B2A4A]">
-            {activeIssues.length > 0 ? 'Open Support Tickets' : 'No open tickets'}
-          </p>
-        </Link>
-      </div>
+      {/* Section 3 — Product Pipeline */}
+      <section className="mb-8">
+        <SectionTitle>📦 Product Pipeline</SectionTitle>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {pipelineCards.map((c) => <StatCard key={c.label} {...c} />)}
+        </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-6">
+      {/* Section 4 — Overview */}
+      <section className="mb-8">
+        <SectionTitle>👥 Overview</SectionTitle>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {overviewCards.map((c) => <StatCard key={c.label} {...c} />)}
+        </div>
+      </section>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[
           { label: 'Review Seller Applications', href: '/admin/sellers', desc: 'Approve or reject new seller registrations' },
           { label: 'Review Products', href: '/admin/products', desc: 'Approve or reject submitted products' },
