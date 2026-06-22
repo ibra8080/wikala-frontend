@@ -60,7 +60,9 @@ export default function AdminDashboard() {
         pending_products: products.filter((p: { status: string }) => p.status === 'pending_review').length,
         pending_shipments: shipments.filter((s: { status: string }) => s.status === 'submitted').length,
         total_sellers: sellers.filter((s: { status: string }) => s.status === 'approved').length,
-        total_products: products.filter((p: { status: string }) => p.status === 'listed').length,
+        total_products: products.filter((p: { status: string }) =>
+          ['approved', 'listed', 'awaiting_seller_shipment', 'in_warehouse_egypt', 'in_transit', 'in_warehouse_germany'].includes(p.status)
+        ).length,
         in_transit: products.filter((p: { status: string }) => p.status === 'in_transit').length,
         in_warehouse_egypt: products.filter((p: { status: string }) => p.status === 'in_warehouse_egypt').length,
         in_warehouse_germany: products.filter((p: { status: string }) => p.status === 'in_warehouse_germany').length,
@@ -84,7 +86,7 @@ export default function AdminDashboard() {
     { label: 'In Transit', value: stats?.in_transit ?? 0, href: '/admin/products', urgent: false },
     { label: 'In Germany Warehouse', value: stats?.in_warehouse_germany ?? 0, href: '/admin/products', urgent: false },
     { label: 'Active Sellers', value: stats?.total_sellers ?? 0, href: '/admin/sellers', urgent: false },
-    { label: 'Listed Products', value: stats?.total_products ?? 0, href: '/admin/products', urgent: false },
+    { label: 'Active Products', value: stats?.total_products ?? 0, href: '/admin/products', urgent: false },
   ]
 
   const adminId      = user?.id ?? -1
