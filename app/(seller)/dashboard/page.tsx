@@ -34,15 +34,74 @@ interface StatementSummary {
   period_end: string
 }
 
+interface SalesStats {
+  today: { orders: number; units: number; revenue: number }
+  month: { orders: number; units: number; revenue: number }
+}
+
+const fmtEur = (n: number) =>
+  new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n || 0)
+
+const todayLabel = new Date().toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'short', year: 'numeric',
+})
+const monthLabel = new Date().toLocaleDateString('en-GB', {
+  month: 'long', year: 'numeric',
+})
+
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <h2 className="text-base font-bold text-[#1B2A4A] mb-3">{children}</h2>
+)
+
+const StatCard = ({ label, value, sub, href }: {
+  label: string; value: string | number; sub?: string; href: string
+}) => (
+  <Link
+    href={href}
+    className="flex-1 bg-white rounded-2xl border border-[#E0DDDA] p-6 hover:border-[#C8952E] transition group"
+  >
+    <p className="text-4xl font-bold font-display text-[#1B2A4A]">{value}</p>
+    <p className="text-sm text-[#6B6560] mt-2 group-hover:text-[#C8952E] transition">{label}</p>
+    {sub && <p className="text-xs text-[#9A938C] mt-1">{sub}</p>}
+  </Link>
+)
+
+const PayoutCard = ({ paid, pending, href }: {
+  paid: number; pending: number; href: string
+}) => (
+  <Link
+    href={href}
+    className="flex-1 bg-white rounded-2xl border border-[#E0DDDA] p-6 hover:border-[#C8952E] transition group"
+  >
+    <div className="flex gap-6">
+      <div>
+        <p className="text-2xl font-bold font-display text-[#1B2A4A]">{fmtEur(paid)}</p>
+        <p className="text-xs text-[#9A938C] mt-1">Received</p>
+      </div>
+      <div>
+        <p className={`text-2xl font-bold font-display ${pending < 0 ? 'text-red-600' : 'text-[#C8952E]'}`}>
+          {fmtEur(pending)}
+        </p>
+        <p className="text-xs text-[#9A938C] mt-1">{pending < 0 ? 'You owe' : 'Due to you'}</p>
+      </div>
+    </div>
+    <p className="text-sm text-[#6B6560] mt-3 group-hover:text-[#C8952E] transition">
+      Statements Summary
+    </p>
+  </Link>
+)
+
 export default function SellerDashboard() {
   const router = useRouter()
   const { user, _hasHydrated } = useAuthStore()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
-  const [issues, setIssues]               = useState<Issue[]>([])
-  const [productCount, setProductCount]   = useState(0)
-  const [germanyCount, setGermanyCount]   = useState(0)
-  const [totalSales, setTotalSales]       = useState('€0')
+  const [issues, setIssues] = useState<Issue[]>([])
+  const [productCount, setProductCount] = useState(0)
+  const [germanyCount, setGermanyCount] = useState(0)
+  const [paidTotal, setPaidTotal] = useState(0)
+  const [pendingTotal, setPendingTotal] = useState(0)
+  const [sales, setSales] = useState<SalesStats | null>(null)
   const [shipmentIssues, setShipmentIssues] = useState<{ id: number; request_number: string; issue_note: string }[]>([])
   const [pendingStatements, setPendingStatements] = useState<StatementSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,10 +118,12 @@ export default function SellerDashboard() {
       api.get('/inventory/'),
       api.get('/finance/statements/'),
       api.get('/inventory/shipment-requests/'),
-    ]).then(([profileRes, convsRes, issuesRes, prodsRes, invRes, stmtRes, shipmentsRes]) => {
+      api.get('/finance/sales/stats/'),
+    ]).then(([profileRes, convsRes, issuesRes, prodsRes, invRes, stmtRes, shipmentsRes, salesRes]) => {
       setProfile(profileRes.data)
       setConversations(convsRes.data)
       setIssues(issuesRes.data)
+      setSales(salesRes.data)
 
       const shipIssues = (shipmentsRes.data as { id: number; request_number: string; execution_status: string; issue_note: string }[])
         .filter(s => s.execution_status === 'issue')
@@ -72,12 +133,17 @@ export default function SellerDashboard() {
       setGermanyCount(
         (invRes.data as InventoryItem[]).filter(i => i.quantity_in_germany > 0).length
       )
+
       const allStatements = stmtRes.data as StatementSummary[]
       setPendingStatements(allStatements.filter(s => s.status === 'sent'))
-      const totalNet = allStatements
-        .filter(s => s.status === 'paid')
-        .reduce((sum, s) => sum + parseFloat(s.net_amount), 0)
-      setTotalSales(`€${totalNet.toFixed(2)}`)
+      setPaidTotal(
+        allStatements.filter(s => s.status === 'paid')
+          .reduce((sum, s) => sum + parseFloat(s.net_amount), 0)
+      )
+      setPendingTotal(
+        allStatements.filter(s => s.status === 'sent' || s.status === 'accepted')
+          .reduce((sum, s) => sum + parseFloat(s.net_amount), 0)
+      )
     }).finally(() => setLoading(false))
   }, [user, _hasHydrated])
 
@@ -93,14 +159,15 @@ export default function SellerDashboard() {
     rejected: { label: 'Rejected', color: 'bg-red-50 text-red-700 border-red-200' },
     suspended: { label: 'Suspended', color: 'bg-gray-50 text-gray-500 border-gray-200' },
   }
-
   const status = statusMap[profile?.status ?? 'pending'] ?? statusMap.pending
 
-  const sellerId     = user?.id ?? -1
-  const unreadConvs  = conversations.filter(c =>
+  const sellerId = user?.id ?? -1
+  const unreadConvs = conversations.filter(c =>
     c.messages?.some(m => m.sender !== sellerId && !m.is_read)
   )
-  const activeIssues     = issues.filter(i => i.status === 'open' || i.status === 'in_progress')
+  const activeIssues = issues.filter(i => i.status === 'open' || i.status === 'in_progress')
+  const isApproved = profile?.status === 'approved'
+
   return (
     <div>
       {/* Header */}
@@ -115,9 +182,7 @@ export default function SellerDashboard() {
       <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-[#6B6560] uppercase tracking-wide mb-2">
-              Account Status
-            </p>
+            <p className="text-xs text-[#6B6560] uppercase tracking-wide mb-2">Account Status</p>
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm border ${status.color}`}>
               {status.label}
             </span>
@@ -128,12 +193,8 @@ export default function SellerDashboard() {
             )}
           </div>
           <div>
-            <p className="text-xs text-[#6B6560] uppercase tracking-wide mb-2">
-              Seller ID
-            </p>
-            <p className="text-xl font-mono font-bold text-[#1B2A4A]">
-              {profile?.seller_id || '—'}
-            </p>
+            <p className="text-xs text-[#6B6560] uppercase tracking-wide mb-2">Seller ID</p>
+            <p className="text-xl font-mono font-bold text-[#1B2A4A]">{profile?.seller_id || '—'}</p>
           </div>
         </div>
         {profile?.status === 'pending' && (
@@ -152,7 +213,7 @@ export default function SellerDashboard() {
         )}
       </div>
 
-      {/* Pending Statements */}
+      {/* Pending Statements alert */}
       {pendingStatements.length > 0 && (
         <Link href="/statements"
           className="block bg-amber-50 border border-amber-300 rounded-2xl p-5 mb-6 hover:bg-amber-100 transition group">
@@ -177,7 +238,7 @@ export default function SellerDashboard() {
         </Link>
       )}
 
-      {/* Shipment Issues */}
+      {/* Shipment Issues alert */}
       {shipmentIssues.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6">
           <p className="text-sm font-semibold text-red-700 mb-2">
@@ -194,93 +255,95 @@ export default function SellerDashboard() {
         </div>
       )}
 
-      {/* Notifications */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <Link href="/messages"
-          className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className={`text-2xl font-bold ${unreadConvs.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
-                {unreadConvs.length}
-              </span>
-              {unreadConvs.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
-              )}
+      {isApproved && (
+        <>
+          {/* Sales */}
+          <section className="mb-8">
+            <SectionTitle>Sales</SectionTitle>
+            <div className="flex flex-col md:flex-row gap-4">
+              <StatCard label="Today's Orders" value={sales?.today.orders ?? 0} sub={todayLabel} href="/sales" />
+              <StatCard label="Today's Sales" value={fmtEur(sales?.today.revenue ?? 0)} sub={todayLabel} href="/sales" />
+              <StatCard label="Month Orders" value={sales?.month.orders ?? 0} sub={monthLabel} href="/sales" />
+              <StatCard label="Month Sales" value={fmtEur(sales?.month.revenue ?? 0)} sub={monthLabel} href="/sales" />
             </div>
-            <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
-          </div>
-          <p className="text-sm font-semibold text-[#1B2A4A]">
-            {unreadConvs.length > 0 ? 'New Messages from Wikala' : 'No new messages'}
-          </p>
-        </Link>
+          </section>
 
-        <Link href="/messages?tab=issues"
-          className="bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className={`text-2xl font-bold ${activeIssues.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
-                {activeIssues.length}
-              </span>
-              {activeIssues.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
-              )}
+          {/* My Overview */}
+          <section className="mb-8">
+            <SectionTitle>My Overview</SectionTitle>
+            <div className="flex flex-col md:flex-row gap-4">
+              <StatCard label="My Products" value={productCount} href="/products" />
+              <PayoutCard paid={paidTotal} pending={pendingTotal} href="/statements" />
+              <StatCard label="In Germany Warehouse" value={germanyCount} href="/inventory" />
             </div>
-            <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
-          </div>
-          <p className="text-sm font-semibold text-[#1B2A4A]">
-            {activeIssues.length > 0 ? 'Open Support Tickets' : 'No open tickets'}
-          </p>
-        </Link>
-      </div>
-
-      {/* Stats */}
-      {profile?.status === 'approved' && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {[
-            { label: 'Products',    value: String(productCount), href: '/products' },
-            { label: 'Total Sales', value: totalSales,            href: '/statements' },
-            { label: 'Inventory',   value: String(germanyCount),  href: '/inventory' },
-          ].map((stat) => (
-            <a
-              key={stat.label}
-              href={stat.href}
-              className="bg-white rounded-2xl border border-[#E0DDDA] p-6 hover:border-[#C8952E] transition group"
-            >
-              <p className="text-2xl font-bold text-[#1B2A4A] font-display">
-                {stat.value}
-              </p>
-              <p className="text-sm text-[#6B6560] mt-1 group-hover:text-[#C8952E] transition">
-                {stat.label}
-              </p>
-            </a>
-          ))}
-        </div>
+          </section>
+        </>
       )}
 
-      {/* Quick Links */}
-      {profile?.status === 'approved' && (
-        <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
-          <h2 className="font-semibold text-[#1B2A4A] mb-4 font-display">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
+      {/* Notifications (moved down) */}
+      <section className="mb-8">
+        <SectionTitle>Messages & Support</SectionTitle>
+        <div className="flex flex-col md:flex-row gap-4">
+          <Link href="/messages"
+            className="flex-1 bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className={`text-2xl font-bold ${unreadConvs.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
+                  {unreadConvs.length}
+                </span>
+                {unreadConvs.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
+                )}
+              </div>
+              <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
+            </div>
+            <p className="text-sm font-semibold text-[#1B2A4A]">
+              {unreadConvs.length > 0 ? 'New Messages from Wikala' : 'No new messages'}
+            </p>
+          </Link>
+
+          <Link href="/messages?tab=issues"
+            className="flex-1 bg-white rounded-2xl border border-[#E0DDDA] p-5 hover:bg-[#FFF8EE] transition group">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className={`text-2xl font-bold ${activeIssues.length > 0 ? 'text-[#C8952E]' : 'text-[#1B2A4A]'}`}>
+                  {activeIssues.length}
+                </span>
+                {activeIssues.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#C8952E] text-white">New</span>
+                )}
+              </div>
+              <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
+            </div>
+            <p className="text-sm font-semibold text-[#1B2A4A]">
+              {activeIssues.length > 0 ? 'Open Support Tickets' : 'No open tickets'}
+            </p>
+          </Link>
+        </div>
+      </section>
+
+      {/* Quick Actions — single row */}
+      {isApproved && (
+        <section>
+          <SectionTitle>Quick Actions</SectionTitle>
+          <div className="flex flex-col md:flex-row gap-3">
             {[
               { label: 'Add New Product', href: '/products/new' },
-              { label: 'View Statements', href: '/statements' },
-              { label: 'Track Shipments', href: '/inventory' },
+              { label: 'Create Shipment Request', href: '/inventory/new' },
+              { label: 'Latest Statement', href: '/statements' },
               { label: 'Contact Wikala', href: '/messages' },
             ].map((link) => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
-                className="flex items-center justify-between p-4 border border-[#E0DDDA] rounded-xl hover:border-[#C8952E] hover:bg-[#F5F4F0] transition group"
+                className="flex-1 flex items-center justify-between p-4 border border-[#E0DDDA] rounded-xl bg-white hover:border-[#C8952E] hover:bg-[#F5F4F0] transition group"
               >
                 <span className="text-sm text-[#1B2A4A]">{link.label}</span>
                 <span className="text-[#C8952E] group-hover:translate-x-1 transition">→</span>
-              </a>
+              </Link>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   )
