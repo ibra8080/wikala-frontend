@@ -31,23 +31,31 @@ interface Stats {
 interface SalesStats {
   today: { orders: number; units: number; revenue: number }
   month: { orders: number; units: number; revenue: number }
+  sellers_payout: { paid: number; pending: number }
 }
 
 const fmtEur = (n: number) =>
   new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n || 0)
 
+const todayLabel = new Date().toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'short', year: 'numeric',
+})
+const monthLabel = new Date().toLocaleDateString('en-GB', {
+  month: 'long', year: 'numeric',
+})
+
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="text-sm font-semibold text-[#6B6560] uppercase tracking-wide mb-3">{children}</h2>
+  <h2 className="text-base font-bold text-[#1B2A4A] mb-3">{children}</h2>
 )
 
-const StatCard = ({ label, value, href, urgent }: {
-  label: string; value: string | number; href: string; urgent?: boolean
+const StatCard = ({ label, value, sub, href, urgent }: {
+  label: string; value: string | number; sub?: string; href: string; urgent?: boolean
 }) => {
   const isUrgent = urgent && Number(value) > 0
   return (
     <Link
       href={href}
-      className={`bg-white rounded-2xl border p-6 hover:border-[#C8952E] transition group
+      className={`flex-1 bg-white rounded-2xl border p-6 hover:border-[#C8952E] transition group
         ${isUrgent ? 'border-[#C8952E]' : 'border-[#E0DDDA]'}`}
     >
       <p className={`text-4xl font-bold font-display
@@ -57,9 +65,33 @@ const StatCard = ({ label, value, href, urgent }: {
       <p className="text-sm text-[#6B6560] mt-2 group-hover:text-[#C8952E] transition">
         {label}
       </p>
+      {sub && <p className="text-xs text-[#9A938C] mt-1">{sub}</p>}
     </Link>
   )
 }
+
+const PayoutCard = ({ paid, pending, href }: {
+  paid: number; pending: number; href: string
+}) => (
+  <Link
+    href={href}
+    className="flex-1 bg-white rounded-2xl border border-[#E0DDDA] p-6 hover:border-[#C8952E] transition group"
+  >
+    <div className="flex gap-6">
+      <div>
+        <p className="text-2xl font-bold font-display text-[#1B2A4A]">{fmtEur(paid)}</p>
+        <p className="text-xs text-[#9A938C] mt-1">Paid</p>
+      </div>
+      <div>
+        <p className="text-2xl font-bold font-display text-[#C8952E]">{fmtEur(pending)}</p>
+        <p className="text-xs text-[#9A938C] mt-1">Pending</p>
+      </div>
+    </div>
+    <p className="text-sm text-[#6B6560] mt-3 group-hover:text-[#C8952E] transition">
+      Sellers Payout (this year)
+    </p>
+  </Link>
+)
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -118,34 +150,7 @@ export default function AdminDashboard() {
     c.messages?.some(m => m.sender !== adminId && !m.is_read)
   )
   const activeIssues = issues.filter(i => i.status === 'open' || i.status === 'in_progress')
-
-  // ── Card groups ──
-  const salesCards = [
-    { label: "Today's Orders", value: String(sales?.today.orders ?? 0), href: '/admin/sales' },
-    { label: "Today's Revenue", value: fmtEur(sales?.today.revenue ?? 0), href: '/admin/sales' },
-    { label: 'Month Orders', value: String(sales?.month.orders ?? 0), href: '/admin/sales' },
-    { label: 'Month Revenue', value: fmtEur(sales?.month.revenue ?? 0), href: '/admin/sales' },
-  ]
-
-  const actionCards = [
-    { label: 'Pending Sellers', value: stats?.pending_sellers ?? 0, href: '/admin/sellers' },
-    { label: 'Pending Products', value: stats?.pending_products ?? 0, href: '/admin/products' },
-    { label: 'Pending Shipments', value: stats?.pending_shipments ?? 0, href: '/admin/shipments' },
-  ]
-
-  const pipelineCards = [
-    { label: 'Awaiting Shipment', value: stats?.awaiting_shipment ?? 0, href: '/admin/products' },
-    { label: 'In Egypt Warehouse', value: stats?.in_warehouse_egypt ?? 0, href: '/admin/products' },
-    { label: 'In Transit', value: stats?.in_transit ?? 0, href: '/admin/products' },
-    { label: 'In Germany Warehouse', value: stats?.in_warehouse_germany ?? 0, href: '/admin/products' },
-    { label: 'Active Products', value: stats?.total_products ?? 0, href: '/admin/products' },
-  ]
-
-  const overviewCards = [
-    { label: 'Active Sellers', value: stats?.total_sellers ?? 0, href: '/admin/sellers' },
-    { label: 'Unread Messages', value: unreadConvs.length, href: '/admin/messages?tab=conversations' },
-    { label: 'Open Tickets', value: activeIssues.length, href: '/admin/messages?tab=issues' },
-  ]
+  const needsAttention = unreadConvs.length + activeIssues.length
 
   return (
     <div>
@@ -154,59 +159,49 @@ export default function AdminDashboard() {
         <p className="text-sm text-[#6B6560] mt-1">Wikala Operations Overview</p>
       </div>
 
-      {/* Section 1 — Sales */}
+      {/* Sales */}
       <section className="mb-8">
-        <SectionTitle>💰 Sales</SectionTitle>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {salesCards.map((c) => <StatCard key={c.label} {...c} />)}
+        <SectionTitle>Sales</SectionTitle>
+        <div className="flex flex-col md:flex-row gap-4">
+          <StatCard label="Today's Orders" value={sales?.today.orders ?? 0} sub={todayLabel} href="/admin/sales" />
+          <StatCard label="Today's Sales" value={fmtEur(sales?.today.revenue ?? 0)} sub={todayLabel} href="/admin/sales" />
+          <StatCard label="Month Orders" value={sales?.month.orders ?? 0} sub={monthLabel} href="/admin/sales" />
+          <StatCard label="Month Sales" value={fmtEur(sales?.month.revenue ?? 0)} sub={monthLabel} href="/admin/sales" />
         </div>
       </section>
 
-      {/* Section 2 — Needs Action */}
+      {/* Overview */}
       <section className="mb-8">
-        <SectionTitle>🔴 Needs Action</SectionTitle>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {actionCards.map((c) => <StatCard key={c.label} {...c} urgent />)}
+        <SectionTitle>Overview</SectionTitle>
+        <div className="flex flex-col md:flex-row gap-4">
+          <StatCard label="Active Sellers" value={stats?.total_sellers ?? 0} href="/admin/sellers" />
+          <StatCard label="Active Products" value={stats?.total_products ?? 0} href="/admin/products" />
+          <StatCard label="Site Visitors" value="—" sub="Coming soon" href="/admin/sales" />
+          <PayoutCard paid={sales?.sellers_payout.paid ?? 0} pending={sales?.sellers_payout.pending ?? 0} href="/admin/statements" />
         </div>
       </section>
 
-      {/* Section 3 — Product Pipeline */}
+      {/* Needs Action */}
       <section className="mb-8">
-        <SectionTitle>📦 Product Pipeline</SectionTitle>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {pipelineCards.map((c) => <StatCard key={c.label} {...c} />)}
+        <SectionTitle>Needs Action</SectionTitle>
+        <div className="flex flex-col md:flex-row gap-4">
+          <StatCard label="Pending Sellers" value={stats?.pending_sellers ?? 0} href="/admin/sellers" urgent />
+          <StatCard label="Pending Products" value={stats?.pending_products ?? 0} href="/admin/products" urgent />
+          <StatCard label="Pending Shipments" value={stats?.pending_shipments ?? 0} href="/admin/shipments" urgent />
+          <StatCard label="Open Messages & Tickets" value={needsAttention} href="/admin/messages" urgent />
         </div>
       </section>
 
-      {/* Section 4 — Overview */}
+      {/* Product Journey */}
       <section className="mb-8">
-        <SectionTitle>👥 Overview</SectionTitle>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {overviewCards.map((c) => <StatCard key={c.label} {...c} />)}
+        <SectionTitle>Product Journey</SectionTitle>
+        <div className="flex flex-col md:flex-row gap-4">
+          <StatCard label="Awaiting Shipment" value={stats?.awaiting_shipment ?? 0} href="/admin/products" />
+          <StatCard label="In Egypt Warehouse" value={stats?.in_warehouse_egypt ?? 0} href="/admin/products" />
+          <StatCard label="In Transit" value={stats?.in_transit ?? 0} href="/admin/products" />
+          <StatCard label="In Germany Warehouse" value={stats?.in_warehouse_germany ?? 0} href="/admin/products" />
         </div>
       </section>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {[
-          { label: 'Review Seller Applications', href: '/admin/sellers', desc: 'Approve or reject new seller registrations' },
-          { label: 'Review Products', href: '/admin/products', desc: 'Approve or reject submitted products' },
-          { label: 'Manage Shipment Requests', href: '/admin/shipments', desc: 'Accept shipment requests and set delivery details' },
-          { label: 'Manage Statements', href: '/admin/statements', desc: 'Create and send monthly seller statements' },
-        ].map((action) => (
-          <Link
-            key={action.label}
-            href={action.href}
-            className="bg-white rounded-2xl border border-[#E0DDDA] p-6 hover:border-[#C8952E] transition group"
-          >
-            <p className="font-semibold text-[#1B2A4A] group-hover:text-[#C8952E] transition">
-              {action.label}
-            </p>
-            <p className="text-sm text-[#6B6560] mt-1">{action.desc}</p>
-            <p className="text-[#C8952E] mt-3 text-sm">Go →</p>
-          </Link>
-        ))}
-      </div>
     </div>
   )
 }
