@@ -145,7 +145,7 @@ export default function SellerDashboard() {
           .reduce((sum, s) => sum + parseFloat(s.net_amount), 0)
       )
     }).finally(() => setLoading(false))
-  }, [user, _hasHydrated])
+  }, [user, _hasHydrated, router])
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
