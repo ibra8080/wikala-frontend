@@ -7,6 +7,7 @@ const sellerLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: '▪' },
   { label: 'My Profile', href: '/profile', icon: '▪' },
   { label: 'Products', href: '/products', icon: '▪' },
+  { label: 'My Sales', href: '/sales', icon: '▪' },
   { label: 'Inventory', href: '/inventory', icon: '▪' },
   { label: 'Statements', href: '/statements', icon: '▪' },
   { label: 'Messages', href: '/messages', icon: '▪' },
