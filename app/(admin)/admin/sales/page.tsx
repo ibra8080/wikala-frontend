@@ -6,12 +6,16 @@ import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer,
+  CartesianGrid, Tooltip, ResponsiveContainer, Rectangle,
 } from 'recharts'
+import type { BarShapeProps } from 'recharts'
 
 interface Agg { orders: number; units: number; revenue: number }
 interface MonthPoint { month: string; orders: number; revenue: number }
-interface DayPoint { day: string; orders: number; revenue: number }
+interface DayPoint {
+  day: string; day_num: number; orders: number; revenue: number
+  is_weekend: boolean; is_future: boolean
+}
 interface SellerRow { seller_id: number; seller_name: string; orders: number; revenue: number }
 
 interface Stats {
@@ -128,11 +132,12 @@ export default function AdminSalesPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
-          <h3 className="text-base font-bold text-[#1B2A4A] mb-4">Monthly Revenue (12 months)</h3>
+          <h3 className="text-base font-bold text-[#1B2A4A] mb-4">Monthly Revenue ({new Date().getFullYear()})</h3>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={stats?.monthly_chart ?? []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E0DDDA" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6B6560' }} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6B6560' }}
+                tickFormatter={(m: string) => m.slice(5)} />
               <YAxis tick={{ fontSize: 11, fill: '#6B6560' }} />
               <Tooltip formatter={(v) => fmtEur(Number(v))} />
               <Line type="monotone" dataKey="revenue" stroke="#C8952E" strokeWidth={2} dot={{ r: 3 }} />
@@ -143,13 +148,29 @@ export default function AdminSalesPage() {
         <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
           <h3 className="text-base font-bold text-[#1B2A4A] mb-4">Daily Orders (this month)</h3>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={stats?.daily_chart ?? []}>
+            <BarChart data={stats?.daily_chart ?? []} barCategoryGap={1}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E0DDDA" />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#6B6560' }}
-                tickFormatter={(d: string) => d.slice(8)} />
+              <XAxis dataKey="day_num" tick={{ fontSize: 10, fill: '#6B6560' }} interval={0} />
               <YAxis tick={{ fontSize: 11, fill: '#6B6560' }} allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="orders" fill="#1B2A4A" radius={[4, 4, 0, 0]} />
+              <Tooltip
+                cursor={{ fill: 'rgba(200,149,46,0.08)' }}
+                formatter={(v) => [Number(v), 'orders']}
+                labelFormatter={(d) => `Day ${d}`}
+              />
+              <Bar
+                dataKey="orders"
+                shape={(props: BarShapeProps) => (
+                  <Rectangle
+                    {...props}
+                    radius={[3, 3, 0, 0]}
+                    fill={
+                      props.payload?.is_future ? '#EEECEA'
+                      : props.payload?.is_weekend ? '#C8952E'
+                      : '#1B2A4A'
+                    }
+                  />
+                )}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
