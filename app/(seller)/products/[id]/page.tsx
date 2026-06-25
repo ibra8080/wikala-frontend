@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 import Link from 'next/link'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface ProductImage {
   id: number
@@ -154,6 +155,11 @@ export default function ProductProfilePage() {
   const [editingField, setEditingField] = useState<EditingField>(null)
   const [saving, setSaving] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
+  const [confirm, setConfirm] = useState<{
+    title: string
+    message: string
+    onConfirm: () => void
+  } | null>(null)
 
   const fetchProduct = useCallback(async () => {
     try {
@@ -192,32 +198,44 @@ export default function ProductProfilePage() {
     }
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!product) return
     const activeStatuses = ['approved', 'awaiting_seller_shipment', 'in_warehouse_egypt', 'in_transit', 'in_warehouse_germany', 'listed']
     if (activeStatuses.includes(product.status)) {
-      alert('This product is active. Please contact Wikala to request deletion.')
+      setError('This product is active. Please contact Wikala to request deletion.')
       return
     }
-    if (!confirm('Are you sure you want to delete this product?')) return
-    setDeleting(true)
-    try {
-      await api.delete(`/products/${product.id}/`)
-      router.push('/products')
-    } catch {
-      alert('Failed to delete product.')
-      setDeleting(false)
-    }
+    setConfirm({
+      title: 'Delete Product',
+      message: 'Are you sure you want to delete this product? This action cannot be undone.',
+      onConfirm: async () => {
+        setConfirm(null)
+        setDeleting(true)
+        try {
+          await api.delete(`/products/${product.id}/`)
+          router.push('/products')
+        } catch {
+          setError('Failed to delete product.')
+          setDeleting(false)
+        }
+      },
+    })
   }
 
-  const handleDeleteImage = async (imageId: number) => {
-    if (!confirm('Delete this image?')) return
-    try {
-      await api.delete(`/products/${product!.id}/images/${imageId}/`)
-      await fetchProduct()
-    } catch {
-      alert('Failed to delete image.')
-    }
+  const handleDeleteImage = (imageId: number) => {
+    setConfirm({
+      title: 'Delete Image',
+      message: 'Are you sure you want to delete this image?',
+      onConfirm: async () => {
+        setConfirm(null)
+        try {
+          await api.delete(`/products/${product!.id}/images/${imageId}/`)
+          await fetchProduct()
+        } catch {
+          setError('Failed to delete image.')
+        }
+      },
+    })
   }
 
   const handleAddImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,14 +275,20 @@ export default function ProductProfilePage() {
     await fetchProduct()
   }
 
-  const handleDeleteVariant = async (variantId: number) => {
-    if (!confirm('Delete this variant?')) return
-    try {
-      await api.delete(`/products/${product!.id}/variants/${variantId}/`)
-      await fetchProduct()
-    } catch {
-      alert('Failed to delete variant.')
-    }
+  const handleDeleteVariant = (variantId: number) => {
+    setConfirm({
+      title: 'Delete Variant',
+      message: 'Are you sure you want to delete this variant?',
+      onConfirm: async () => {
+        setConfirm(null)
+        try {
+          await api.delete(`/products/${product!.id}/variants/${variantId}/`)
+          await fetchProduct()
+        } catch {
+          setError('Failed to delete variant.')
+        }
+      },
+    })
   }
 
   const [editingVariant, setEditingVariant] = useState<number | null>(null)
@@ -589,6 +613,16 @@ export default function ProductProfilePage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.title ?? ''}
+        message={confirm?.message ?? ''}
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => confirm?.onConfirm()}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   )
 }
