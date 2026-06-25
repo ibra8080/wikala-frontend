@@ -83,6 +83,7 @@ export default function NewProductPage() {
   // Images
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
+    console.log('SELECTED FILES:', files.map(f => ({ name: f.name, type: f.type, size: f.size })))
 
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
     const MAX_SIZE = 5 * 1024 * 1024 // 5MB
