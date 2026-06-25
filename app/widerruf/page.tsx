@@ -1,11 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import PublicNavbar from '@/components/ui/PublicNavbar'
-import PublicFooter from '@/components/ui/PublicFooter'
-
-type Lang = 'en' | 'ar'
-
+import Image from 'next/image'
 type Step = 'form' | 'confirm' | 'success'
 
 interface FormData {
@@ -20,7 +16,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function WiderrufPage() {
-  const [lang, setLang] = useState<Lang>('en')
   const [step, setStep] = useState<Step>('form')
   const [data, setData] = useState<FormData>({
     name: '',
@@ -89,7 +84,11 @@ export default function WiderrufPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF8]">
-      <PublicNavbar lang={lang} onLangChange={setLang} />
+      <header className="sticky top-0 z-50 bg-[#FAFAF8]/95 backdrop-blur border-b border-[#E0DDDA]">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center">
+          <Image src="/wikala_Logo.svg" alt="Wikala" width={120} height={32} priority />
+        </div>
+      </header>
 
       <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-12 sm:py-16">
         <div className="mb-8">
@@ -177,7 +176,11 @@ export default function WiderrufPage() {
         </p>
       </main>
 
-      <PublicFooter lang={lang} />
+      <footer className="bg-[#1B2A4A] py-8 mt-12">
+        <div className="max-w-2xl mx-auto px-6 text-center">
+          <p className="text-xs text-white/40">© 2026 Wikala. Alle Rechte vorbehalten.</p>
+        </div>
+      </footer>
     </div>
   )
 }
