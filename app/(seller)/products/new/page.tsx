@@ -267,12 +267,16 @@ export default function NewProductPage() {
 
             <div className="grid grid-cols-3 gap-5">
               <div>
-                <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">Description (English)</label>
+                <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
+                  Description (English) <span className="text-[#6B6560] text-xs font-normal">optional</span>
+                </label>
                 <textarea name="description_en" value={form.description_en} onChange={handleChange}
                   rows={4} placeholder="Describe your product..." className={inputClass + ' resize-none'} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">Description (Arabic)</label>
+                <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
+                  Description (Arabic) <span className="text-red-400">*</span>
+                </label>
                 <textarea name="description_ar" value={form.description_ar} onChange={handleChange}
                   rows={4} dir="rtl" placeholder="اكتب وصف المنتج..." className={inputClass + ' resize-none'} />
               </div>
@@ -287,7 +291,7 @@ export default function NewProductPage() {
 
             <div className="bg-[#F5F4F0] border border-[#E0DDDA] rounded-lg px-4 py-3">
               <p className="text-sm text-[#6B6560]">
-                <span className="text-[#C8952E]">ℹ</span> German fields are optional. If left empty, Wikala will translate the English content for German customers.
+                <span className="text-[#C8952E]">ℹ</span> Only the Arabic description is required. If English or German is left empty, Wikala will translate it for you.
               </p>
             </div>
 
@@ -362,7 +366,7 @@ export default function NewProductPage() {
 
             <div className="flex justify-end pt-2">
               <button onClick={() => setStep(2)}
-                disabled={!form.name_en || !form.name_ar || !form.price || images.length === 0}
+                disabled={!form.name_en || !form.name_ar || !form.description_ar.trim() || !form.price || images.length === 0}
                 className="bg-[#1B2A4A] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#243860] disabled:opacity-40 transition">
                 Next: Technical Specs →
               </button>
