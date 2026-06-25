@@ -84,17 +84,27 @@ export default function NewProductPage() {
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
 
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+    const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+
     // حد أقصى 10 صور
     if (images.length + files.length > 10) {
       setError('Maximum 10 images allowed per product.')
+      e.target.value = ''
       return
     }
 
-    // فحص حجم كل صورة (5MB max)
-    const MAX_SIZE = 5 * 1024 * 1024 // 5MB
     for (const file of files) {
+      // فحص الصيغة لحظة الاختيار (يرفض AVIF/HEIC وأي صيغة غير مدعومة)
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        setError(`"${file.name}" is not a supported format. Please use JPG, PNG, or WebP. (AVIF and HEIC are not supported — change your camera setting to "Most Compatible" or convert the image first.)`)
+        e.target.value = ''
+        return
+      }
+      // فحص الحجم
       if (file.size > MAX_SIZE) {
         setError(`"${file.name}" exceeds the 5MB limit. Please compress the image and try again.`)
+        e.target.value = ''
         return
       }
     }
@@ -106,6 +116,7 @@ export default function NewProductPage() {
     }))
     setImages(prev => [...prev, ...newImages])
     setError('')
+    e.target.value = ''
   }
 
   const removeImage = (index: number) => {
@@ -347,7 +358,7 @@ export default function NewProductPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 multiple
                 className="hidden"
                 onChange={handleImageSelect}
