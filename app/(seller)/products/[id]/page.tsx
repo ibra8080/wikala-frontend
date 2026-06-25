@@ -222,10 +222,30 @@ export default function ProductProfilePage() {
 
   const handleAddImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
+
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+    const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+
     if ((product?.images.length ?? 0) + files.length > 12) {
-      alert('Maximum 12 images allowed.')
+      setError('Maximum 12 images allowed.')
+      e.target.value = ''
       return
     }
+
+    for (const file of files) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        setError(`"${file.name}" is not a supported format. Please use JPG, PNG, or WebP. (AVIF and HEIC are not supported — change your camera setting to "Most Compatible" or convert the image first.)`)
+        e.target.value = ''
+        return
+      }
+      if (file.size > MAX_SIZE) {
+        setError(`"${file.name}" exceeds the 5MB limit. Please compress the image and try again.`)
+        e.target.value = ''
+        return
+      }
+    }
+
+    setError('')
     for (const file of files) {
       const formData = new FormData()
       formData.append('image', file)
@@ -233,6 +253,7 @@ export default function ProductProfilePage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
     }
+    e.target.value = ''
     await fetchProduct()
   }
 
@@ -358,7 +379,7 @@ export default function ProductProfilePage() {
           {product.images.length < 12 && (
             <label className="block w-full border border-dashed border-[#C8952E] text-[#C8952E] rounded-xl py-2.5 text-sm font-medium text-center hover:bg-[#F5F4F0] transition cursor-pointer mb-3">
               + Add Photos ({product.images.length}/12)
-              <input type="file" accept="image/*" multiple className="hidden"
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden"
                 onChange={handleAddImages} />
             </label>
           )}
