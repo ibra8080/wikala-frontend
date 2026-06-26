@@ -25,6 +25,41 @@ interface ProductImage {
 
 const steps = ['Product Info', 'Technical Specs', 'Packaging', 'Variants']
 
+const FIELD_LABELS: Record<string, string> = {
+  name_ar: 'Arabic product name',
+  name_en: 'English product name',
+  name_de: 'German product name',
+  description_ar: 'Arabic description',
+  description_en: 'English description',
+  description_de: 'German description',
+  price: 'Price',
+  category: 'Category',
+  unit_weight_kg: 'Item weight',
+  unit_length_cm: 'Item length',
+  unit_width_cm: 'Item width',
+  unit_height_cm: 'Item height',
+  variants: 'Variants',
+  images: 'Images',
+}
+
+function parseApiError(data: unknown): string {
+  if (!data || typeof data !== 'object') {
+    return 'Something went wrong. Please check your inputs and try again.'
+  }
+  const messages: string[] = []
+  for (const [field, value] of Object.entries(data as Record<string, unknown>)) {
+    const label = FIELD_LABELS[field] || field
+    if (Array.isArray(value)) {
+      messages.push(`${label}: ${value.join(' ')}`)
+    } else if (typeof value === 'string') {
+      messages.push(`${label}: ${value}`)
+    }
+  }
+  return messages.length > 0
+    ? messages.join(' • ')
+    : 'Something went wrong. Please check your inputs and try again.'
+}
+
 export default function NewProductPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -83,7 +118,6 @@ export default function NewProductPage() {
   // Images
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    console.log('SELECTED FILES:', files.map(f => ({ name: f.name, type: f.type, size: f.size })))
 
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
     const MAX_SIZE = 5 * 1024 * 1024 // 5MB
@@ -200,8 +234,6 @@ export default function NewProductPage() {
           quantity_submitted: 0,
         })),
       })
-      console.log('Full response:', JSON.stringify(productRes.data))
-
       const productId = productRes.data.id
       if (images.length > 0) {
         await uploadImages(productId)
@@ -210,8 +242,7 @@ export default function NewProductPage() {
       router.push('/products')
     } catch (err: unknown) {
       const e = err as { response?: { data?: unknown }, message?: string }
-      console.error('Error:', JSON.stringify(e.response?.data), e.message)
-      setError('Something went wrong. Please check your inputs and try again.')
+      setError(parseApiError(e.response?.data))
     } finally {
       setLoading(false)
     }
