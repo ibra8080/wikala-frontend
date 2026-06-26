@@ -197,7 +197,7 @@ export default function NewProductPage() {
     setVariants(prev => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (submitForReview: boolean) => {
     setLoading(true)
     setError('')
     try {
@@ -238,7 +238,9 @@ export default function NewProductPage() {
       if (images.length > 0) {
         await uploadImages(productId)
       }
-
+      if (submitForReview) {
+        await api.patch(`/products/${productId}/`, { status: 'pending_review' })
+      }
       router.push('/products')
     } catch (err: unknown) {
       const e = err as { response?: { data?: unknown }, message?: string }
@@ -624,15 +626,27 @@ export default function NewProductPage() {
 
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
+            <div className="bg-[#F5F4F0] border border-[#E0DDDA] rounded-lg px-4 py-3">
+              <p className="text-xs text-[#6B6560]">
+                <span className="text-[#C8952E]">ℹ</span> <strong>Save as Draft</strong> keeps the product private so you can edit it later. <strong>Submit for Approval</strong> sends it to Wikala&apos;s team for review.
+              </p>
+            </div>
+
             <div className="flex justify-between pt-2">
               <button onClick={() => setStep(3)}
                 className="border border-[#E0DDDA] text-[#6B6560] px-6 py-2.5 rounded-lg text-sm hover:border-[#1B2A4A] hover:text-[#1B2A4A] transition">
                 ← Back
               </button>
-              <button onClick={handleSubmit} disabled={loading}
-                className="bg-[#C8952E] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-40 transition">
-                {loading ? 'Submitting...' : 'Submit Product →'}
-              </button>
+              <div className="flex gap-3">
+                <button onClick={() => handleSubmit(false)} disabled={loading}
+                  className="border border-[#1B2A4A] text-[#1B2A4A] px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#F5F4F0] disabled:opacity-40 transition">
+                  {loading ? 'Saving...' : 'Save as Draft'}
+                </button>
+                <button onClick={() => handleSubmit(true)} disabled={loading}
+                  className="bg-[#C8952E] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-40 transition">
+                  {loading ? 'Submitting...' : 'Submit for Approval →'}
+                </button>
+              </div>
             </div>
           </div>
         )}
