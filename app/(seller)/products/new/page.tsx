@@ -183,6 +183,10 @@ export default function NewProductPage() {
         unit_width_cm: form.unit_width_cm ? parseFloat(form.unit_width_cm) : null,
         unit_height_cm: form.unit_height_cm ? parseFloat(form.unit_height_cm) : null,
         unit_weight_kg: form.unit_weight_kg ? parseFloat(form.unit_weight_kg) / 1000 : null,
+        inner_weight_kg: form.inner_weight_kg ? parseFloat(form.inner_weight_kg) / 1000 : null,
+        inner_length_cm: form.inner_length_cm ? parseFloat(form.inner_length_cm) : null,
+        inner_width_cm: form.inner_width_cm ? parseFloat(form.inner_width_cm) : null,
+        inner_height_cm: form.inner_height_cm ? parseFloat(form.inner_height_cm) : null,
         carton_weight_kg: form.carton_weight_kg ? parseFloat(form.carton_weight_kg) : null,
         carton_length_cm: form.carton_length_cm ? parseFloat(form.carton_length_cm) : null,
         carton_width_cm: form.carton_width_cm ? parseFloat(form.carton_width_cm) : null,
@@ -495,7 +499,7 @@ export default function NewProductPage() {
                   { name: 'inner_length_cm', label: 'Length (cm)' },
                   { name: 'inner_width_cm', label: 'Width (cm)' },
                   { name: 'inner_height_cm', label: 'Height (cm)' },
-                  { name: 'inner_weight_kg', label: 'Weight (kg)' },
+                  { name: 'inner_weight_kg', label: 'Weight (g)' },
                 ].map(field => (
                   <div key={field.name}>
                     <label className="block text-xs text-[#6B6560] mb-1.5">{field.label}</label>
