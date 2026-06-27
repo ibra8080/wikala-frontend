@@ -25,6 +25,8 @@ interface ProductVariant {
 interface Product {
   id: number
   product_code: string
+  category: number | null
+  category_name: string
   name_en: string
   name_ar: string
   description_en: string
@@ -460,6 +462,10 @@ export default function ProductProfilePage() {
               <p className="text-sm font-medium text-[#1B2A4A]" dir="rtl">{product.name_ar}</p>
             </div>
 
+            <div className="py-3 border-b border-[#F5F4F0]">
+              <p className="text-xs text-[#6B6560] mb-1">Category</p>
+              <p className="text-sm font-medium text-[#1B2A4A]">{product.category_name || '—'}</p>
+            </div>
             <Field label="Price (EUR)" field="price" value={product.price} type="number" {...fieldProps} />
             <Field label="Production Cost (EUR)" field="production_cost" value={product.production_cost ?? ''} type="number" {...fieldProps} />
           </div>
