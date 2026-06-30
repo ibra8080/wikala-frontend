@@ -184,23 +184,25 @@ export default function AdminProductsPage() {
           <h1 className="text-2xl font-bold text-[#1B2A4A]">Products</h1>
           <p className="text-sm text-[#6B6560] mt-1">{products.length} total products</p>
         </div>
-        <button
-          onClick={handleShopifyExport}
-          disabled={exporting || selectedIds.length === 0}
-          className="px-4 py-2 rounded-lg text-sm font-medium bg-[#C8952E] text-white hover:bg-[#b3842a] transition disabled:opacity-50"
-        >
-          {exporting
-            ? 'Exporting...'
-            : selectedIds.length
-              ? `↓ Export ${selectedIds.length} to Shopify CSV`
-              : '↓ Select products to export'}
-        </button>
+        {filter === 'approved' && (
+          <button
+            onClick={handleShopifyExport}
+            disabled={exporting || selectedIds.length === 0}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-[#C8952E] text-white hover:bg-[#b3842a] transition disabled:opacity-50"
+          >
+            {exporting
+              ? 'Exporting...'
+              : selectedIds.length
+                ? `↓ Export ${selectedIds.length} to Shopify CSV`
+                : '↓ Select products to export'}
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map(tab => (
-          <button key={tab.key} onClick={() => setFilter(tab.key)}
+          <button key={tab.key} onClick={() => { setFilter(tab.key); setSelectedIds([]) }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition
               ${filter === tab.key ? 'bg-[#1B2A4A] text-white' : 'bg-[#F5F4F0] text-[#6B6560] hover:bg-[#EEECEA]'}`}>
             {tab.label}
