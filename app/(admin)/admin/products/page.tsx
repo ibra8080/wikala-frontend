@@ -15,6 +15,7 @@ interface Product {
   status: string
   created_at: string
   seller: number
+  validation_issues: string[]
 }
 
 const statusStyles: Record<string, string> = {
@@ -237,7 +238,17 @@ export default function AdminProductsPage() {
                     />
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm font-medium text-[#1B2A4A]">{product.name_en}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-[#1B2A4A]">{product.name_en}</p>
+                      {product.validation_issues && product.validation_issues.length > 0 && (
+                        <span
+                          className="inline-flex items-center text-amber-500 cursor-help"
+                          title={`Incomplete — cannot be exported:\n• ${product.validation_issues.join('\n• ')}`}
+                        >
+                          ⚠️
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-[#6B6560] mt-0.5">{product.name_ar}</p>
                   </td>
                   <td className="px-6 py-4">
