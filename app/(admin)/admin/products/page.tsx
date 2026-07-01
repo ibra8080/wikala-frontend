@@ -140,6 +140,7 @@ export default function AdminProductsPage() {
 
   const [exporting, setExporting] = useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [statusUpdating, setStatusUpdating] = useState(false)
 
   const toggleSelect = (id: number) => {
     setSelectedIds(prev =>
@@ -169,6 +170,45 @@ export default function AdminProductsPage() {
     }
   }
 
+  const handleMarkListed = async () => {
+    setStatusUpdating(true)
+    try {
+      await api.post('/products/admin/bulk-status/', {
+        ids: selectedIds,
+        action: 'to_listed',
+      })
+      setSelectedIds([])
+      await fetchProducts()
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { products?: { name: string; issues: string[] }[] } } }
+      const blocked = e.response?.data?.products
+      if (blocked && blocked.length) {
+        const lines = blocked.map(p => `• ${p.name}: ${p.issues.join(', ')}`).join('\n')
+        alert(`Cannot list incomplete products:\n\n${lines}`)
+      } else {
+        alert('Failed to mark as listed. Please try again.')
+      }
+    } finally {
+      setStatusUpdating(false)
+    }
+  }
+
+  const handleReturnToApproved = async () => {
+    setStatusUpdating(true)
+    try {
+      await api.post('/products/admin/bulk-status/', {
+        ids: selectedIds,
+        action: 'to_approved',
+      })
+      setSelectedIds([])
+      await fetchProducts()
+    } catch {
+      alert('Failed to return to Approved. Please try again.')
+    } finally {
+      setStatusUpdating(false)
+    }
+  }
+
   const filtered = products.filter(p => filter === 'all' ? true : p.status === filter)
 
   if (loading) return (
@@ -184,19 +224,47 @@ export default function AdminProductsPage() {
           <h1 className="text-2xl font-bold text-[#1B2A4A]">Products</h1>
           <p className="text-sm text-[#6B6560] mt-1">{products.length} total products</p>
         </div>
-        {filter === 'approved' && (
-          <button
-            onClick={handleShopifyExport}
-            disabled={exporting || selectedIds.length === 0}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-[#C8952E] text-white hover:bg-[#b3842a] transition disabled:opacity-50"
-          >
-            {exporting
-              ? 'Exporting...'
-              : selectedIds.length
-                ? `↓ Export ${selectedIds.length} to Shopify CSV`
-                : '↓ Select products to export'}
-          </button>
-        )}
+        <div className="flex gap-2">
+          {filter === 'approved' && (
+            <>
+              <button
+                onClick={handleMarkListed}
+                disabled={statusUpdating || selectedIds.length === 0}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-[#1B2A4A] text-white hover:bg-[#16233d] transition disabled:opacity-50"
+              >
+                {statusUpdating
+                  ? 'Updating...'
+                  : selectedIds.length
+                    ? `Mark ${selectedIds.length} as Listed`
+                    : 'Select products to list'}
+              </button>
+              <button
+                onClick={handleShopifyExport}
+                disabled={exporting || selectedIds.length === 0}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-[#C8952E] text-white hover:bg-[#b3842a] transition disabled:opacity-50"
+              >
+                {exporting
+                  ? 'Exporting...'
+                  : selectedIds.length
+                    ? `↓ Export ${selectedIds.length} to Shopify CSV`
+                    : '↓ Select products to export'}
+              </button>
+            </>
+          )}
+          {filter === 'listed' && (
+            <button
+              onClick={handleReturnToApproved}
+              disabled={statusUpdating || selectedIds.length === 0}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-[#1B2A4A] text-white hover:bg-[#16233d] transition disabled:opacity-50"
+            >
+              {statusUpdating
+                ? 'Updating...'
+                : selectedIds.length
+                  ? `Return ${selectedIds.length} to Approved`
+                  : 'Select products to return'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
