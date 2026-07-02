@@ -22,6 +22,7 @@ interface Stats {
   pending_shipments: number
   total_sellers: number
   total_products: number
+  needs_reexport: number
   in_transit: number
   in_warehouse_egypt: number
   in_warehouse_germany: number
@@ -126,6 +127,9 @@ export default function AdminDashboard() {
       setStats({
         pending_sellers: sellers.filter((s: { status: string }) => s.status === 'pending').length,
         pending_products: products.filter((p: { status: string }) => p.status === 'pending_review').length,
+        needs_reexport: products.filter((p: { status: string; previous_status?: string }) =>
+          p.status === 'pending_review' && p.previous_status === 'listed'
+        ).length,
         pending_shipments: shipments.filter((s: { status: string }) => s.status === 'submitted').length,
         total_sellers: sellers.filter((s: { status: string }) => s.status === 'approved').length,
         total_products: products.filter((p: { status: string }) =>
@@ -187,6 +191,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col md:flex-row gap-4">
           <StatCard label="Pending Sellers" value={stats?.pending_sellers ?? 0} href="/admin/sellers" urgent />
           <StatCard label="Pending Products" value={stats?.pending_products ?? 0} href="/admin/products" urgent />
+          <StatCard label="Need Re-export" value={stats?.needs_reexport ?? 0} href="/admin/products" urgent />
           <StatCard label="Pending Shipments" value={stats?.pending_shipments ?? 0} href="/admin/shipments" urgent />
           <StatCard label="Open Messages & Tickets" value={needsAttention} href="/admin/messages" urgent />
         </div>
