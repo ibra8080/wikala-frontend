@@ -13,9 +13,16 @@ function ResetPasswordForm() {
 
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
+  const [show, setShow] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  const checks = [
+    { label: 'At least 8 characters', ok: password.length >= 8 },
+    { label: 'Not entirely numbers', ok: password.length > 0 && !/^\d+$/.test(password) },
+    { label: 'Passwords match', ok: password.length > 0 && password === password2 },
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,30 +95,59 @@ function ResetPasswordForm() {
         <label className="block text-sm font-medium text-gray-700 mb-1">
           New password
         </label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="new-password"
-          className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          placeholder="••••••••"
-        />
+        <div className="relative">
+          <input
+            type={show ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            placeholder="••••••••"
+          />
+          <button
+            type="button"
+            onClick={() => setShow((s) => !s)}
+            className="absolute inset-y-0 right-0 px-3 text-xs text-gray-500 hover:text-gray-900"
+          >
+            {show ? 'Hide' : 'Show'}
+          </button>
+        </div>
       </div>
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Confirm new password
         </label>
-        <input
-          type="password"
-          value={password2}
-          onChange={(e) => setPassword2(e.target.value)}
-          required
-          autoComplete="new-password"
-          className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-          placeholder="••••••••"
-        />
+        <div className="relative">
+          <input
+            type={show ? 'text' : 'password'}
+            value={password2}
+            onChange={(e) => setPassword2(e.target.value)}
+            required
+            autoComplete="new-password"
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            placeholder="••••••••"
+          />
+        </div>
       </div>
+
+      <ul className="space-y-1">
+        {checks.map((c) => (
+          <li
+            key={c.label}
+            className={`text-xs flex items-center gap-1.5 transition-colors ${
+              c.ok ? 'text-green-600' : 'text-gray-400'
+            }`}
+          >
+            <span>{c.ok ? '✓' : '○'}</span>
+            {c.label}
+          </li>
+        ))}
+      </ul>
+      <p className="text-[11px] text-gray-400">
+        Very common passwords will be rejected.
+      </p>
 
       {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
