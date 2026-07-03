@@ -78,6 +78,42 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  const [showPw, setShowPw] = useState(false)
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
+  const [pwMessage, setPwMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const pwChecks = [
+    { label: 'At least 8 characters', ok: pwForm.next.length >= 8 },
+    { label: 'Not entirely numbers', ok: pwForm.next.length > 0 && !/^\d+$/.test(pwForm.next) },
+    { label: 'Passwords match', ok: pwForm.next.length > 0 && pwForm.next === pwForm.confirm },
+  ]
+
+  const handleChangePassword = async () => {
+    setPwSaving(true)
+    setPwMessage(null)
+    try {
+      await api.post('/users/change-password/', {
+        current_password: pwForm.current,
+        password: pwForm.next,
+        password2: pwForm.confirm,
+      })
+      setPwMessage({ type: 'success', text: 'Password changed successfully.' })
+      setPwForm({ current: '', next: '', confirm: '' })
+    } catch (err: unknown) {
+      const data = (err as { response?: { data?: Record<string, string[] | string> } })?.response?.data
+      const msg =
+        (typeof data?.current_password === 'string' ? data.current_password : '') ||
+        (Array.isArray(data?.current_password) ? data.current_password[0] : '') ||
+        (Array.isArray(data?.password) ? data.password[0] : typeof data?.password === 'string' ? data.password : '') ||
+        (Array.isArray(data?.password2) ? data.password2[0] : typeof data?.password2 === 'string' ? data.password2 : '') ||
+        'Something went wrong. Please try again.'
+      setPwMessage({ type: 'error', text: msg })
+    } finally {
+      setPwSaving(false)
+    }
+  }
+
   const fetchProfile = useCallback(async () => {
     try {
       const res = await api.get('/sellers/profile/')
@@ -288,6 +324,75 @@ export default function ProfilePage() {
             <Field label="Approved On" value={new Date(profile.approved_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} />
           )}
           <Field label="Exported Before" value={profile.exported_before ? 'Yes' : 'No'} />
+        </div>
+
+        {/* Change Password */}
+        <div className="col-span-2 bg-white rounded-2xl border border-[#E0DDDA] p-6">
+          <h2 className="font-semibold text-[#1B2A4A] mb-4">Change Password</h2>
+          <div className="max-w-md space-y-4">
+            <div>
+              <label className="text-xs text-[#6B6560] mb-1 block">Current password</label>
+              <div className="relative">
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  value={pwForm.current}
+                  onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
+                  autoComplete="current-password"
+                  className={inputClass + ' pr-12'}
+                />
+                <button type="button" onClick={() => setShowPw((s) => !s)}
+                  className="absolute inset-y-0 right-0 px-3 text-xs text-[#6B6560] hover:text-[#1B2A4A]">
+                  {showPw ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-[#6B6560] mb-1 block">New password</label>
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={pwForm.next}
+                onChange={(e) => setPwForm({ ...pwForm, next: e.target.value })}
+                autoComplete="new-password"
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-[#6B6560] mb-1 block">Confirm new password</label>
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={pwForm.confirm}
+                onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
+                autoComplete="new-password"
+                className={inputClass}
+              />
+            </div>
+
+            <ul className="space-y-1">
+              {pwChecks.map((c) => (
+                <li key={c.label}
+                  className={`text-xs flex items-center gap-1.5 transition-colors ${c.ok ? 'text-green-600' : 'text-[#6B6560]'}`}>
+                  <span>{c.ok ? '✓' : '○'}</span>
+                  {c.label}
+                </li>
+              ))}
+            </ul>
+            <p className="text-[11px] text-[#6B6560]">Very common passwords will be rejected.</p>
+
+            {pwMessage && (
+              <p className={`text-sm ${pwMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                {pwMessage.text}
+              </p>
+            )}
+
+            <button
+              onClick={handleChangePassword}
+              disabled={pwSaving || !pwChecks.every((c) => c.ok) || !pwForm.current}
+              className="bg-[#1B2A4A] text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50">
+              {pwSaving ? 'Changing...' : 'Change Password'}
+            </button>
+          </div>
         </div>
 
       </div>
