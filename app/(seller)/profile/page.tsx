@@ -78,6 +78,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  const [pwOpen, setPwOpen] = useState(false)
   const [showPw, setShowPw] = useState(false)
   const [pwSaving, setPwSaving] = useState(false)
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
@@ -328,8 +329,20 @@ export default function ProfilePage() {
 
         {/* Change Password */}
         <div className="col-span-2 bg-white rounded-2xl border border-[#E0DDDA] p-6">
-          <h2 className="font-semibold text-[#1B2A4A] mb-4">Change Password</h2>
-          <div className="max-w-md space-y-4">
+          <button
+            type="button"
+            onClick={() => setPwOpen((o) => !o)}
+            className="w-full flex items-center justify-between"
+          >
+            <h2 className="font-semibold text-[#1B2A4A]">Change Password</h2>
+            <svg
+              className={`w-5 h-5 text-[#6B6560] transition-transform ${pwOpen ? 'rotate-180' : ''}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div className={`max-w-md space-y-4 ${pwOpen ? 'mt-4' : 'hidden'}`}>
             <div>
               <label className="text-xs text-[#6B6560] mb-1 block">Current password</label>
               <div className="relative">

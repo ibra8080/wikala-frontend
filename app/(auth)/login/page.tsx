@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showMobileWarning, setShowMobileWarning] = useState(false)
+  const [showPw, setShowPw] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -103,15 +104,24 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-[#1B2A4A] mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition bg-[#FAFAF8]"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="w-full border border-[#E0DDDA] rounded-lg px-4 py-2.5 pr-12 text-sm focus:outline-none focus:border-[#1B2A4A] transition bg-[#FAFAF8]"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                className="absolute inset-y-0 right-0 px-3 text-xs text-[#6B6560] hover:text-[#1B2A4A]"
+              >
+                {showPw ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
 
           <div className="text-left">
