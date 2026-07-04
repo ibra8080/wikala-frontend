@@ -300,7 +300,7 @@ export default function NewProductPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
-                  Product Name (Arabic) <span className="text-red-400">*</span>
+                  Product Name (Arabic) <span className="text-[#6B6560] text-xs font-normal">optional</span>
                 </label>
                 <input name="name_ar" value={form.name_ar} onChange={handleChange}
                   placeholder="مثال: جلباب قطني رجالي" dir="rtl" className={inputClass} />
@@ -415,7 +415,7 @@ export default function NewProductPage() {
 
             <div className="flex justify-end pt-2">
               <button onClick={() => setStep(2)}
-                disabled={!form.name_en || !form.name_ar || !form.description_en.trim() || !form.price || images.length === 0}
+                disabled={!form.name_en || !form.description_en.trim() || !form.price || images.length === 0}
                 className="bg-[#1B2A4A] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#243860] disabled:opacity-40 transition">
                 Next: Technical Specs →
               </button>
