@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/axios'
 import Link from 'next/link'
+import RichTextEditor from '@/components/ui/RichTextEditor'
 
 interface Variant {
   color: string
@@ -319,8 +320,11 @@ export default function NewProductPage() {
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Description (English) <span className="text-red-400">*</span>
                 </label>
-                <textarea name="description_en" value={form.description_en} onChange={handleChange}
-                  rows={4} placeholder="Describe your product..." className={inputClass + ' resize-none'} />
+                <RichTextEditor
+                  value={form.description_en}
+                  onChange={(html) => setForm(prev => ({ ...prev, description_en: html }))}
+                  placeholder="Describe your product..."
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">

@@ -26,3 +26,26 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
 }
+
+.wk-editor ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.wk-editor ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.wk-editor h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1B2A4A;
+  margin: 0.75rem 0 0.35rem;
+}
+.wk-editor p {
+  margin: 0.35rem 0;
+}
+.wk-editor:focus {
+  outline: none;
+}
