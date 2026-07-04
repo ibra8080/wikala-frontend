@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 import Link from 'next/link'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import RichTextEditor from '@/components/ui/RichTextEditor'
 
 interface ProductImage {
   id: number
@@ -55,7 +56,7 @@ interface Product {
 const inputClass = "w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A] transition"
 
 function Field({
-  label, field, value, type = 'text', multiline = false,
+  label, field, value, type = 'text', multiline = false, rich = false,
   editingField, editValues, saving,
   onEdit, onSave, onCancel, onValueChange,
 }: {
@@ -64,6 +65,7 @@ function Field({
   value: string
   type?: string
   multiline?: boolean
+  rich?: boolean
   editingField: string | null
   editValues: Record<string, string>
   saving: boolean
@@ -78,32 +80,62 @@ function Field({
         <div className="flex-1">
           <p className="text-xs text-[#6B6560] mb-1">{label}</p>
           {editingField === field ? (
-            <div className="flex gap-2 items-start mt-1">
-              {multiline ? (
-                <textarea
+            rich ? (
+              <div className="mt-1">
+                <RichTextEditor
                   value={editValues[field] ?? ''}
-                  onChange={e => onValueChange(field, e.target.value)}
-                  rows={3}
-                  className={inputClass + ' resize-none flex-1'}
+                  onChange={html => onValueChange(field, html)}
+                  placeholder="Describe your product..."
                 />
-              ) : (
-                <input
-                  type={type}
-                  value={editValues[field] ?? ''}
-                  onChange={e => onValueChange(field, e.target.value)}
-                  className={inputClass + ' flex-1'}
-                />
-              )}
-              <button onClick={() => void onSave(field)}
-                disabled={saving}
-                className="bg-[#1B2A4A] text-white px-3 py-2 rounded-lg text-xs font-medium disabled:opacity-50 whitespace-nowrap">
-                {saving ? '...' : 'Save'}
-              </button>
-              <button onClick={onCancel}
-                className="text-xs text-[#6B6560] px-2 py-2 hover:text-[#1B2A4A]">
-                Cancel
-              </button>
-            </div>
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => void onSave(field)}
+                    disabled={saving}
+                    className="bg-[#1B2A4A] text-white px-3 py-2 rounded-lg text-xs font-medium disabled:opacity-50 whitespace-nowrap">
+                    {saving ? '...' : 'Save'}
+                  </button>
+                  <button onClick={onCancel}
+                    className="text-xs text-[#6B6560] px-2 py-2 hover:text-[#1B2A4A]">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2 items-start mt-1">
+                {multiline ? (
+                  <textarea
+                    value={editValues[field] ?? ''}
+                    onChange={e => onValueChange(field, e.target.value)}
+                    rows={6}
+                    className={inputClass + ' resize-none flex-1'}
+                  />
+                ) : (
+                  <input
+                    type={type}
+                    value={editValues[field] ?? ''}
+                    onChange={e => onValueChange(field, e.target.value)}
+                    className={inputClass + ' flex-1'}
+                  />
+                )}
+                <button onClick={() => void onSave(field)}
+                  disabled={saving}
+                  className="bg-[#1B2A4A] text-white px-3 py-2 rounded-lg text-xs font-medium disabled:opacity-50 whitespace-nowrap">
+                  {saving ? '...' : 'Save'}
+                </button>
+                <button onClick={onCancel}
+                  className="text-xs text-[#6B6560] px-2 py-2 hover:text-[#1B2A4A]">
+                  Cancel
+                </button>
+              </div>
+            )
+          ) : rich ? (
+            value ? (
+              <div
+                className="wk-editor text-sm text-[#1B2A4A] mt-0.5"
+                dangerouslySetInnerHTML={{ __html: value }}
+              />
+            ) : (
+              <p className="text-sm text-[#1B2A4A] mt-0.5">—</p>
+            )
           ) : (
             <p className="text-sm text-[#1B2A4A] mt-0.5">{value || '—'}</p>
           )}
@@ -473,7 +505,7 @@ export default function ProductProfilePage() {
           {/* Description */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
             <h2 className="font-semibold text-[#1B2A4A] mb-2">Description</h2>
-            <Field label="Description (English)" field="description_en" value={product.description_en} multiline {...fieldProps} />
+            <Field label="Description (English)" field="description_en" value={product.description_en} rich {...fieldProps} />
             <Field label="Description (Arabic)" field="description_ar" value={product.description_ar} multiline {...fieldProps} />
           </div>
 
