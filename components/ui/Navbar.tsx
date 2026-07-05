@@ -1,13 +1,16 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/auth'
 import { useRouter } from 'next/navigation'
+import CostCalculator from '@/components/ui/CostCalculator'
 
 export default function Navbar() {
   const { user, clearAuth } = useAuthStore()
   const router = useRouter()
+  const [calcOpen, setCalcOpen] = useState(false)
 
   const handleLogout = () => {
     clearAuth()
@@ -33,6 +36,12 @@ export default function Navbar() {
           <>
             <span className="text-sm text-[#6B6560]">{user.email}</span>
             <button
+              onClick={() => setCalcOpen(true)}
+              className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition"
+            >
+              Profit Calculator
+            </button>
+            <button
               onClick={handleLogout}
               className="text-sm border border-[#E0DDDA] text-[#1B2A4A] px-4 py-1.5 rounded-lg hover:border-[#1B2A4A] transition"
             >
@@ -41,6 +50,7 @@ export default function Navbar() {
           </>
         )}
       </div>
+      <CostCalculator open={calcOpen} onClose={() => setCalcOpen(false)} />
     </nav>
   )
 }
