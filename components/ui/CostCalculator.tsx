@@ -119,6 +119,10 @@ export default function CostCalculator({ open, onClose }: Props) {
               className={inputClass}
               placeholder="e.g. 10"
             />
+            <p className="text-[10px] text-[#6B6560] mt-1">
+              Enter the cost in euros (€). Convert from EGP using the current
+              exchange rate before entering.
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
