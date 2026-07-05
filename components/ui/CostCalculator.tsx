@@ -44,7 +44,6 @@ export default function CostCalculator({ open, onClose }: Props) {
   const volumeM3 = (l * w * h) / 1_000_000
   const storage = volumeM3 * STORAGE_PER_M3_MONTH * (AVG_STORAGE_DAYS / 30)
   const packing = PACKING_FEE
-  const preSaleCost = prod + shipping + storage + packing
 
   // Minimum price → net profit equals production cost
   const minPrice =
@@ -55,8 +54,8 @@ export default function CostCalculator({ open, onClose }: Props) {
 
   const vat = effectivePrice * VAT_RATE
   const commission = effectivePrice * COMMISSION_RATE
-  const netProfit =
-    effectivePrice - vat - commission - shipping - storage - packing - prod
+  const totalCost = prod + shipping + storage + packing + vat + commission
+  const netProfit = effectivePrice - totalCost
 
   const hasInputs = prod > 0 && l > 0 && w > 0 && h > 0 && grams > 0
 
@@ -171,34 +170,64 @@ export default function CostCalculator({ open, onClose }: Props) {
 
         {/* Results */}
         {hasInputs && (
-          <div className="mt-5 bg-[#FAFAF8] border border-[#E0DDDA] rounded-xl p-4 space-y-2.5">
-            <Row label="Your production cost" value={euro(prod)} />
-            <Row
-              label="Product cost before sale (in Germany)"
-              value={euro(preSaleCost)}
-              hint="Includes production, international shipping & customs, storage, and packing."
-            />
-
-            {mode === 'suggest' ? (
-              <Row
-                label="Minimum selling price"
-                value={euro(minPrice)}
-                strong
-                hint="At this price, your net profit equals your production cost."
+          <div className="mt-5 bg-[#FAFAF8] border border-[#E0DDDA] rounded-xl p-4 space-y-2">
+            <ul className="space-y-2">
+              <LineItem label="Production cost" value={euro(prod)} />
+              <LineItem label="Shipping & customs" value={euro(shipping)} />
+              <LineItem
+                label={`Storage (~${AVG_STORAGE_DAYS} days)`}
+                value={euro(storage)}
               />
-            ) : (
-              effectivePrice > 0 && (
-                <Row
-                  label="Your net profit"
-                  value={euro(netProfit)}
-                  strong
-                  positive={netProfit >= 0}
-                />
-              )
-            )}
+              <LineItem label="Pick & pack" value={euro(packing)} />
+              <LineItem label="VAT (19%)" value={euro(vat)} />
+              <LineItem label="Wikala commission (15%)" value={euro(commission)} />
+            </ul>
 
+            <div className="flex items-baseline justify-between gap-3 pt-2 border-t border-[#E0DDDA]">
+              <span className="text-sm font-semibold text-[#1B2A4A]">
+                Total cost
+              </span>
+              <span className="text-sm font-bold text-[#1B2A4A] whitespace-nowrap">
+                {euro(totalCost)}
+              </span>
+            </div>
+
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-sm text-[#6B6560]">
+                {mode === 'suggest' ? 'Minimum selling price' : 'Selling price'}
+              </span>
+              <span className="text-sm text-[#6B6560] whitespace-nowrap">
+                {euro(effectivePrice)}
+              </span>
+            </div>
+
+            <div className="flex items-baseline justify-between gap-3 pt-2 border-t border-[#E0DDDA]">
+              <span className="text-base font-semibold text-[#1B2A4A]">
+                {mode === 'suggest' ? 'Minimum selling price' : 'Your net profit'}
+              </span>
+              <span
+                className={`text-base font-bold whitespace-nowrap ${
+                  mode === 'suggest'
+                    ? 'text-[#C8952E]'
+                    : netProfit >= 0
+                    ? 'text-[#C8952E]'
+                    : 'text-red-600'
+                }`}
+              >
+                {mode === 'suggest' ? euro(minPrice) : euro(netProfit)}
+              </span>
+            </div>
+
+            {mode === 'suggest' && (
+              <p className="text-[10px] text-[#6B6560]">
+                At this price, your net profit equals your production cost ({euro(prod)}).
+              </p>
+            )}
             {mode === 'price' && effectivePrice > 0 && (
-              <Row label="Suggested minimum price" value={euro(minPrice)} muted />
+              <div className="flex items-baseline justify-between gap-3 text-[#6B6560]">
+                <span className="text-xs">Suggested minimum price</span>
+                <span className="text-xs whitespace-nowrap">{euro(minPrice)}</span>
+              </div>
             )}
 
             <p className="text-[10px] text-[#6B6560] pt-2 border-t border-[#E0DDDA] leading-relaxed">
@@ -220,42 +249,11 @@ export default function CostCalculator({ open, onClose }: Props) {
   )
 }
 
-function Row({
-  label,
-  value,
-  hint,
-  strong = false,
-  muted = false,
-  positive = true,
-}: {
-  label: string
-  value: string
-  hint?: string
-  strong?: boolean
-  muted?: boolean
-  positive?: boolean
-}) {
+function LineItem({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div className="flex items-baseline justify-between gap-3">
-        <span className={`text-sm ${muted ? 'text-[#6B6560]' : 'text-[#1B2A4A]'}`}>
-          {label}
-        </span>
-        <span
-          className={`text-sm font-semibold whitespace-nowrap ${
-            muted
-              ? 'text-[#6B6560]'
-              : strong
-              ? positive
-                ? 'text-[#C8952E]'
-                : 'text-red-600'
-              : 'text-[#1B2A4A]'
-          }`}
-        >
-          {value}
-        </span>
-      </div>
-      {hint && <p className="text-[10px] text-[#6B6560] mt-0.5">{hint}</p>}
-    </div>
+    <li className="flex items-baseline justify-between gap-3">
+      <span className="text-sm text-[#1B2A4A]">{label}</span>
+      <span className="text-sm text-[#1B2A4A] whitespace-nowrap">{value}</span>
+    </li>
   )
 }
