@@ -61,11 +61,11 @@ export default function CostCalculator({ open, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#1B2A4A]/40 backdrop-blur-sm px-4 py-8 overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-[#1B2A4A]/40 backdrop-blur-sm p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl border border-[#E0DDDA] shadow-xl max-w-lg w-full p-6 my-auto"
+        className="bg-white rounded-2xl border border-[#E0DDDA] shadow-xl max-w-lg w-full p-6 my-8 sm:my-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-1">
