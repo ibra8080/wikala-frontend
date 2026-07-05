@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 
 interface Props {
   open: boolean
@@ -59,7 +60,7 @@ export default function CostCalculator({ open, onClose }: Props) {
 
   const hasInputs = prod > 0 && l > 0 && w > 0 && h > 0 && grams > 0
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-[#1B2A4A]/40 backdrop-blur-sm p-4 overflow-y-auto"
       onClick={onClose}
@@ -210,7 +211,8 @@ export default function CostCalculator({ open, onClose }: Props) {
           </p>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
