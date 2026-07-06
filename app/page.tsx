@@ -84,33 +84,33 @@ export default function LandingPage() {
       <PublicNavbar lang={lang} onLangChange={setLang} />
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 py-24 text-center">
+      <section className="max-w-6xl mx-auto px-6 py-14 sm:py-24 text-center">
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#C8952E]/10 text-[#C8952E] border border-[#C8952E]/20 mb-6">
           {t.hero.badge}
         </span>
-        <h1 className="text-5xl font-bold text-[#1B2A4A] mb-6 leading-tight max-w-3xl mx-auto">
+        <h1 className="text-3xl sm:text-5xl font-bold text-[#1B2A4A] mb-6 leading-tight max-w-3xl mx-auto">
           {t.hero.title}
         </h1>
-        <p className="text-lg text-[#6B6560] mb-10 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-base sm:text-lg text-[#6B6560] mb-10 max-w-2xl mx-auto leading-relaxed">
           {t.hero.subtitle}
         </p>
-        <div className="flex items-center justify-center gap-4 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
           <Link href="/register"
-            className="bg-[#C8952E] text-white px-8 py-3.5 rounded-xl text-base font-semibold hover:bg-[#b07d25] transition shadow-sm">
+            className="bg-[#C8952E] text-white px-8 py-3.5 rounded-xl text-base font-semibold hover:bg-[#b07d25] transition shadow-sm text-center">
             {t.hero.cta}
           </Link>
           <Link href={`/pricing?lang=${lang}`}
-            className="text-[#1B2A4A] px-6 py-3.5 rounded-xl text-base font-medium border border-[#E0DDDA] hover:bg-[#F5F4F0] transition">
+            className="text-[#1B2A4A] px-6 py-3.5 rounded-xl text-base font-medium border border-[#E0DDDA] hover:bg-[#F5F4F0] transition text-center">
             {t.hero.ctaSub} →
           </Link>
         </div>
       </section>
 
       {/* How it works */}
-      <section className="bg-white border-y border-[#E0DDDA] py-20">
+      <section className="bg-white border-y border-[#E0DDDA] py-12 sm:py-20">
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-[#1B2A4A] text-center mb-16">{t.how.title}</h2>
-          <div className="grid grid-cols-4 gap-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1B2A4A] text-center mb-10 sm:mb-16">{t.how.title}</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {t.how.steps.map((step, i) => (
               <div key={i} className="relative">
                 {i < 3 && (
@@ -126,9 +126,9 @@ export default function LandingPage() {
       </section>
 
       {/* Why Wikala */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <h2 className="text-3xl font-bold text-[#1B2A4A] text-center mb-16">{t.why.title}</h2>
-        <div className="grid grid-cols-2 gap-6">
+      <section className="max-w-6xl mx-auto px-6 py-12 sm:py-20">
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#1B2A4A] text-center mb-10 sm:mb-16">{t.why.title}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {t.why.items.map((item, i) => (
             <div key={i} className="bg-white rounded-2xl border border-[#E0DDDA] p-6 hover:border-[#C8952E] transition">
               <div className="text-3xl mb-4">{item.icon}</div>
@@ -140,9 +140,9 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-[#1B2A4A] py-20">
+      <section className="bg-[#1B2A4A] py-12 sm:py-20">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">{t.cta2.title}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">{t.cta2.title}</h2>
           <p className="text-[#FAFAF8]/70 mb-10 max-w-xl mx-auto">{t.cta2.subtitle}</p>
           <Link href="/register"
             className="bg-[#C8952E] text-white px-8 py-3.5 rounded-xl text-base font-semibold hover:bg-[#b07d25] transition">
