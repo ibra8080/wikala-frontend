@@ -110,7 +110,7 @@ export default function LandingPage() {
       <section className="bg-white border-y border-[#E0DDDA] py-12 sm:py-20">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#1B2A4A] text-center mb-10 sm:mb-16">{t.how.title}</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {t.how.steps.map((step, i) => (
               <div key={i} className="relative">
                 {i < 3 && (
