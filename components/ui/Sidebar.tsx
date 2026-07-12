@@ -14,18 +14,8 @@ const sellerLinks = [
   { label: 'Help Center', href: '/help' },
 ]
 
-export default function Sidebar() {
-  const pathname = usePathname()
-  const [open, setOpen] = useState(false)
-
-  // Close drawer on route change
-  const [prevPathname, setPrevPathname] = useState(pathname)
-  if (pathname !== prevPathname) {
-    setPrevPathname(pathname)
-    setOpen(false)
-  }
-
-  const navContent = (
+function SidebarNav({ pathname }: { pathname: string }) {
+  return (
     <>
       <div className="px-4 mb-6">
         <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-widest">
@@ -52,11 +42,34 @@ export default function Sidebar() {
       </nav>
     </>
   )
+}
+
+// Desktop static sidebar
+export default function Sidebar() {
+  const pathname = usePathname()
+  return (
+    <aside className="hidden md:flex w-56 min-h-full bg-[#F5F4F0] border-r border-[#E0DDDA] pt-6 flex-col">
+      <SidebarNav pathname={pathname} />
+    </aside>
+  )
+}
+
+// Mobile top bar + drawer (rendered separately in layout)
+export function MobileSidebar() {
+  const pathname = usePathname()
+  const [open, setOpen] = useState(false)
+  const [prevPath, setPrevPath] = useState(pathname)
+
+  // Close drawer on route change (derived state, no effect)
+  if (pathname !== prevPath) {
+    setPrevPath(pathname)
+    setOpen(false)
+  }
 
   return (
     <>
-      {/* Mobile top bar with hamburger */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#F5F4F0] border-b border-[#E0DDDA] sticky top-0 z-30">
+      {/* Mobile top bar */}
+      <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#F5F4F0] border-b border-[#E0DDDA]">
         <button
           onClick={() => setOpen(true)}
           aria-label="Open menu"
@@ -73,11 +86,6 @@ export default function Sidebar() {
         </p>
       </div>
 
-      {/* Desktop sidebar (static) */}
-      <aside className="hidden md:flex w-56 min-h-full bg-[#F5F4F0] border-r border-[#E0DDDA] pt-6 flex-col">
-        {navContent}
-      </aside>
-
       {/* Mobile drawer */}
       {open && (
         <div className="md:hidden fixed inset-0 z-50 flex">
@@ -85,7 +93,7 @@ export default function Sidebar() {
             className="absolute inset-0 bg-[#1B2A4A]/40 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
-          <aside className="relative w-64 max-w-[80%] h-full bg-[#F5F4F0] border-r border-[#E0DDDA] pt-6 flex flex-col shadow-xl">
+          <aside className="relative w-64 max-w-[80%] h-full bg-[#F5F4F0] border-r border-[#E0DDDA] pt-6 flex flex-col shadow-xl overflow-y-auto">
             <button
               onClick={() => setOpen(false)}
               aria-label="Close menu"
@@ -96,7 +104,7 @@ export default function Sidebar() {
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            {navContent}
+            <SidebarNav pathname={pathname} />
           </aside>
         </div>
       )}

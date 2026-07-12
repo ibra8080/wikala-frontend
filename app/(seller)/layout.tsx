@@ -1,5 +1,5 @@
 import Navbar from '@/components/ui/Navbar'
-import Sidebar from '@/components/ui/Sidebar'
+import Sidebar, { MobileSidebar } from '@/components/ui/Sidebar'
 import Footer from '@/components/ui/Footer'
 
 export default function SellerLayout({
@@ -10,6 +10,7 @@ export default function SellerLayout({
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex flex-col">
       <Navbar />
+      <MobileSidebar />
       <div className="flex flex-1 min-h-full">
         <Sidebar />
         <main className="flex-1 p-4 sm:p-8 overflow-x-hidden min-w-0">
