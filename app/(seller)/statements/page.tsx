@@ -280,7 +280,7 @@ export default function StatementsPage() {
           {/* Overall Seller Stats */}
           <div>
             <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Overall Performance</p>
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {[
                 {
                   label: 'Registered SKUs',
@@ -320,7 +320,7 @@ export default function StatementsPage() {
             <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">
               {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} — This Month
             </p>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {(() => {
                 const monthStart = new Date()
                 monthStart.setDate(1)
@@ -487,7 +487,7 @@ export default function StatementsPage() {
                   {/* Seller Legal Info */}
                   <div className="px-6 py-4 border-b border-[#E0DDDA]">
                     <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-3">Invoice Details</p>
-                    <div className="grid grid-cols-3 gap-x-8 gap-y-2 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-2 text-sm">
                       <div><span className="text-xs text-[#6B6560]">Legal Name: </span><span className="text-[#1B2A4A]">{stmt.seller_legal_name}</span></div>
                       <div><span className="text-xs text-[#6B6560]">Business Name: </span><span className="text-[#1B2A4A]">{stmt.seller_business_name}</span></div>
                       <div><span className="text-xs text-[#6B6560]">Full Name: </span><span className="text-[#1B2A4A]">{stmt.seller_full_name}</span></div>
@@ -506,7 +506,7 @@ export default function StatementsPage() {
                   </div>
 
                   {/* Summary */}
-                  <div className="px-6 py-4 bg-[#F5F4F0] grid grid-cols-4 gap-4">
+                  <div className="px-6 py-4 bg-[#F5F4F0] grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div><p className="text-xs text-[#6B6560]">Total Sales</p><p className="font-semibold text-[#1B2A4A]">€{stmt.total_sales}</p></div>
                     <div><p className="text-xs text-[#6B6560]">Total Fees</p><p className="font-semibold text-[#1B2A4A]">€{stmt.total_fees}</p></div>
                     <div>
@@ -706,7 +706,7 @@ export default function StatementsPage() {
 
           {/* Seller-level charges */}
           {charges.filter(c => c.service_level === 'seller').length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
+            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-x-auto">
               <div className="px-6 py-4 border-b border-[#E0DDDA] bg-[#F5F4F0] flex items-center justify-between">
                 <p className="text-sm font-semibold text-[#1B2A4A]">Seller Service Charges</p>
                 <span className="text-xs text-[#6B6560]">Charges applied to your account</span>
@@ -746,7 +746,7 @@ export default function StatementsPage() {
                     {expandedCharge === charge.id && (
                       <tr className="bg-[#FAFAF8] border-b border-[#E0DDDA]">
                         <td colSpan={6} className="px-6 py-4">
-                          <div className="grid grid-cols-2 gap-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
                               <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">Service Details</p>
                               <p className="text-sm font-medium text-[#1B2A4A]">{charge.service_name}</p>
@@ -775,7 +775,7 @@ export default function StatementsPage() {
 
           {/* Product-level charges */}
           {charges.filter(c => c.service_level === 'product').length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
+            <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-x-auto">
               <div className="px-6 py-4 border-b border-[#E0DDDA] bg-[#F5F4F0] flex items-center justify-between">
                 <p className="text-sm font-semibold text-[#1B2A4A]">Product Service Charges</p>
                 <span className="text-xs text-[#6B6560]">Charges applied per product</span>
@@ -816,7 +816,7 @@ export default function StatementsPage() {
                     {expandedCharge === charge.id && (
                       <tr className="bg-[#FAFAF8] border-b border-[#E0DDDA]">
                         <td colSpan={7} className="px-6 py-4">
-                          <div className="grid grid-cols-3 gap-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                             <div>
                               <p className="text-xs font-semibold text-[#6B6560] uppercase tracking-wide mb-2">Service Details</p>
                               <p className="text-sm font-medium text-[#1B2A4A]">{charge.service_name}</p>
