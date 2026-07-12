@@ -12,7 +12,7 @@ export default function SellerLayout({
       <Navbar />
       <div className="flex flex-1 min-h-full">
         <Sidebar />
-        <main className="flex-1 p-8 overflow-x-hidden">
+        <main className="flex-1 p-4 sm:p-8 overflow-x-hidden min-w-0">
           {children}
         </main>
       </div>
