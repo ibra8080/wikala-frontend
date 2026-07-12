@@ -222,9 +222,9 @@ function MessagesContent() {
 
       {/* Conversations Tab */}
       {activeTab === 'conversations' && (
-        <div className="grid grid-cols-3 gap-4" style={{ height: '600px' }}>
-          {/* List */}
-          <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden flex flex-col">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[75vh] md:h-[600px]">
+          {/* List — hidden on mobile when a conversation is open */}
+          <div className={`bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden flex-col ${selectedConv ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-4 border-b border-[#E0DDDA] flex items-center justify-between">
               <p className="text-sm font-semibold text-[#1B2A4A]">Conversations</p>
               <button onClick={() => setShowNewConv(true)}
@@ -281,10 +281,13 @@ function MessagesContent() {
           </div>
 
           {/* Chat */}
-          <div className="col-span-2 bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden flex flex-col">
+          <div className={`md:col-span-2 bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden flex-col ${selectedConv ? 'flex' : 'hidden md:flex'}`}>
             {selectedConv ? (
               <>
-                <div className="p-4 border-b border-[#E0DDDA]">
+                <div className="p-4 border-b border-[#E0DDDA] flex items-center gap-2">
+                  <button onClick={() => setSelectedConv(null)} className="md:hidden text-[#6B6560] hover:text-[#1B2A4A]" aria-label="Back">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
                   <p className="font-semibold text-[#1B2A4A]">{selectedConv.subject}</p>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -328,9 +331,9 @@ function MessagesContent() {
 
       {/* Issues Tab */}
       {activeTab === 'issues' && (
-        <div className="grid grid-cols-3 gap-4" style={{ height: '600px' }}>
-          {/* List */}
-          <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden flex flex-col">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[75vh] md:h-[600px]">
+          {/* List — hidden on mobile when an issue is open */}
+          <div className={`bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden flex-col ${selectedIssue ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-4 border-b border-[#E0DDDA] flex items-center justify-between">
               <p className="text-sm font-semibold text-[#1B2A4A]">Support Tickets</p>
               <button onClick={() => setShowNewIssue(true)}
@@ -403,10 +406,13 @@ function MessagesContent() {
           </div>
 
           {/* Issue Detail */}
-          <div className="col-span-2 bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden flex flex-col">
+          <div className={`md:col-span-2 bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden flex-col ${selectedIssue ? 'flex' : 'hidden md:flex'}`}>
             {selectedIssue ? (
               <>
                 <div className="p-4 border-b border-[#E0DDDA]">
+                  <button onClick={() => setSelectedIssue(null)} className="md:hidden mb-2 text-[#6B6560] hover:text-[#1B2A4A]" aria-label="Back">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
                   <div className="flex items-center gap-3 mb-1">
                     <p className="font-mono text-xs text-[#6B6560]">{selectedIssue.issue_number}</p>
                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${statusStyles[selectedIssue.status]}`}>
