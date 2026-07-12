@@ -18,7 +18,7 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-white border-b border-[#E0DDDA] px-6 py-3 flex justify-between items-center sticky top-0 z-50">
+    <nav className="bg-white border-b border-[#E0DDDA] px-4 sm:px-6 py-3 flex justify-between items-center sticky top-0 z-50 gap-2">
       {/* Logo */}
       <Link href="/dashboard">
         <Image
@@ -31,19 +31,19 @@ export default function Navbar() {
       </Link>
 
       {/* Right Side */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3 sm:gap-6 min-w-0">
         {user && (
           <>
-            <span className="text-sm text-[#6B6560]">{user.email}</span>
+            <span className="hidden lg:inline text-sm text-[#6B6560] truncate max-w-[200px]">{user.email}</span>
             <button
               onClick={() => setCalcOpen(true)}
-              className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition"
+              className="text-sm text-[#6B6560] hover:text-[#1B2A4A] transition whitespace-nowrap"
             >
-              Profit Calculator
+              <span className="hidden sm:inline">Profit </span>Calculator
             </button>
             <button
               onClick={handleLogout}
-              className="text-sm border border-[#E0DDDA] text-[#1B2A4A] px-4 py-1.5 rounded-lg hover:border-[#1B2A4A] transition"
+              className="text-sm border border-[#E0DDDA] text-[#1B2A4A] px-3 sm:px-4 py-1.5 rounded-lg hover:border-[#1B2A4A] transition whitespace-nowrap"
             >
               Sign out
             </button>
