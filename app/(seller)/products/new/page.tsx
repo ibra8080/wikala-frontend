@@ -291,7 +291,7 @@ export default function NewProductPage() {
         {/* Step 1 — Product Info */}
         {step === 1 && (
           <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Product Name (English) <span className="text-red-400">*</span>
@@ -315,7 +315,7 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Description (English) <span className="text-red-400">*</span>
@@ -348,7 +348,7 @@ export default function NewProductPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Price (EUR) <span className="text-red-400">*</span>
@@ -375,7 +375,7 @@ export default function NewProductPage() {
               <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                 Product Images <span className="text-[#6B6560] font-normal">(min 1, max 10)</span>
               </label>
-              <div className="grid grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                 {images.map((img, i) => (
                   <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-[#E0DDDA] group">
                     <img src={img.preview} alt="" className="w-full h-full object-cover" />
@@ -434,7 +434,7 @@ export default function NewProductPage() {
               <h3 className="text-sm font-semibold text-[#1B2A4A] mb-4">
                 Item Dimensions <span className="text-red-400">*</span>
               </h3>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-xs text-[#6B6560] mb-1.5">Length (cm)</label>
                   <input name="unit_length_cm" type="number" value={form.unit_length_cm}
@@ -460,7 +460,7 @@ export default function NewProductPage() {
 
             <div>
               <h3 className="text-sm font-semibold text-[#1B2A4A] mb-4">Product Details</h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs text-[#6B6560] mb-1.5">Brand</label>
                   <input name="brand_name" value={form.brand_name} onChange={handleChange}
@@ -497,7 +497,7 @@ export default function NewProductPage() {
               )}
               <div className="space-y-3">
                 {customSpecs.map((spec, i) => (
-                  <div key={i} className="grid grid-cols-2 gap-3 items-center">
+                  <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:items-center">
                     <input value={spec.key} onChange={e => updateCustomSpec(i, 'key', e.target.value)}
                       placeholder="Spec name (e.g. Care Instructions)" className={inputClass} />
                     <div className="flex gap-2">
@@ -531,7 +531,7 @@ export default function NewProductPage() {
             <div>
               <h3 className="text-sm font-semibold text-[#1B2A4A] mb-1">Inner Packaging (per unit)</h3>
               <p className="text-xs text-[#6B6560] mb-4">Dimensions and weight of the product in its individual packaging.</p>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   { name: 'inner_length_cm', label: 'Length (cm)' },
                   { name: 'inner_width_cm', label: 'Width (cm)' },
@@ -551,7 +551,7 @@ export default function NewProductPage() {
             <div>
               <h3 className="text-sm font-semibold text-[#1B2A4A] mb-1">Outer Packaging (carton)</h3>
               <p className="text-xs text-[#6B6560] mb-4">Dimensions and weight of the full export carton.</p>
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                 {[
                   { name: 'carton_length_cm', label: 'Length (cm)' },
                   { name: 'carton_width_cm', label: 'Width (cm)' },
@@ -600,7 +600,7 @@ export default function NewProductPage() {
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs text-[#6B6560] mb-1.5">Color</label>
                     <input value={variant.color}
