@@ -198,7 +198,7 @@ export default function SellerDashboard() {
           </div>
         </div>
         {profile?.status === 'pending' && (
-          <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             <Link href="/welcome"
               className="flex items-center justify-between p-4 border border-[#E0DDDA] rounded-xl hover:border-[#C8952E] hover:bg-[#F5F4F0] transition group">
               <span className="text-sm text-[#1B2A4A]">Getting Started Guide</span>

@@ -93,9 +93,42 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Products Table */}
+      {/* Products — mobile cards */}
       {products.length > 0 && (
-        <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
+        <div className="md:hidden space-y-3">
+          {products.map((product) => (
+            <Link
+              key={product.id}
+              href={`/products/${product.id}`}
+              className="block bg-white rounded-2xl border border-[#E0DDDA] p-4 hover:border-[#C8952E] transition"
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[#1B2A4A] truncate">{product.name_en}</p>
+                  {product.name_ar && (
+                    <p className="text-xs text-[#6B6560] mt-0.5 truncate">{product.name_ar}</p>
+                  )}
+                </div>
+                <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusStyles[product.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                  {statusLabels[product.status] ?? product.status}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-[#6B6560]">
+                <span className="font-mono">{product.product_code || '—'}</span>
+                <span className="text-sm text-[#1B2A4A]">€{product.price}</span>
+              </div>
+              <div className="flex items-center justify-between mt-2 text-xs">
+                <span className="text-[#6B6560]">{new Date(product.created_at).toLocaleDateString('en-GB')}</span>
+                <span className="text-[#C8952E]">View →</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Products Table — desktop */}
+      {products.length > 0 && (
+        <div className="hidden md:block bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
