@@ -176,13 +176,13 @@ export default function NewShipmentRequestPage() {
         Select the product variants (SKUs) you want to ship and specify carton quantities.
       </p>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="col-span-2 space-y-6">
 
           {/* Availability & Delivery */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6 space-y-5">
             <h2 className="font-semibold text-[#1B2A4A]">Availability & Delivery</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Available From <span className="text-red-400">*</span>
@@ -217,7 +217,7 @@ export default function NewShipmentRequestPage() {
           {/* Contact Info */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6 space-y-5">
             <h2 className="font-semibold text-[#1B2A4A]">Contact Information</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Responsible Person <span className="text-red-400">*</span>

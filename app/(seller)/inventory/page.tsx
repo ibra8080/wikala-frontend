@@ -289,7 +289,7 @@ export default function InventoryPage() {
                       <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">
                         ✅ Delivery Details from Wikala
                       </p>
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <p className="text-xs text-green-600">Date</p>
                           <p className="text-sm font-medium text-green-800">{req.delivery_date}</p>
@@ -347,6 +347,7 @@ export default function InventoryPage() {
               <p className="text-sm text-[#6B6560]">Products will appear here after Wikala receives them.</p>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
@@ -373,6 +374,7 @@ export default function InventoryPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -387,6 +389,7 @@ export default function InventoryPage() {
               <p className="text-sm text-[#6B6560]">Products will appear here after they arrive in Germany.</p>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
@@ -447,6 +450,7 @@ export default function InventoryPage() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
