@@ -187,7 +187,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Business Information */}
         <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
@@ -328,7 +328,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Change Password */}
-        <div className="col-span-2 bg-white rounded-2xl border border-[#E0DDDA] p-6">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-[#E0DDDA] p-6">
           <button
             type="button"
             onClick={() => setPwOpen((o) => !o)}
