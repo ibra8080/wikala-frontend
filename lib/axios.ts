@@ -25,7 +25,23 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = []
 }
 
+// Public endpoints must never carry an Authorization header —
+// a stale token in localStorage otherwise triggers token_not_valid.
+const PUBLIC_PATHS = [
+  '/users/register-full/',
+  '/users/register/',
+  '/users/login/',
+  '/users/token/refresh/',
+  '/users/password-reset/',
+  '/users/password-reset-confirm/',
+]
+
 api.interceptors.request.use((config) => {
+  const isPublic = PUBLIC_PATHS.some((p) => (config.url || '').includes(p))
+  if (isPublic) {
+    delete config.headers.Authorization
+    return config
+  }
   if (!config.headers.Authorization) {
     const token = localStorage.getItem('access_token')
     if (token) {
