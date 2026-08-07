@@ -7,6 +7,7 @@ import api from '@/lib/axios'
 import Link from 'next/link'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import RichTextEditor from '@/components/ui/RichTextEditor'
+import BarcodeLabels from '@/components/ui/BarcodeLabels'
 
 interface ProductImage {
   id: number
@@ -329,6 +330,7 @@ export default function ProductProfilePage() {
   const [variantEdit, setVariantEdit] = useState({ color: '', size: '' })
   const [addingVariant, setAddingVariant] = useState(false)
   const [newVariant, setNewVariant] = useState({ color: '', size: '', external_barcode: '' })
+  const [barcodeOpen, setBarcodeOpen] = useState(false)
 
   const handleSaveVariant = async (variantId: number) => {
     setSaving(true)
@@ -535,12 +537,22 @@ export default function ProductProfilePage() {
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-[#1B2A4A]">Variants</h2>
-              <button
-                onClick={() => setAddingVariant(true)}
-                className="text-xs text-[#C8952E] hover:underline"
-              >
-                + Add Variant
-              </button>
+              <div className="flex items-center gap-4">
+                {product.variants.some(v => v.sku && v.sku.trim()) && (
+                  <button
+                    onClick={() => setBarcodeOpen(true)}
+                    className="text-xs text-[#1B2A4A] hover:underline"
+                  >
+                    🏷️ Print Barcodes
+                  </button>
+                )}
+                <button
+                  onClick={() => setAddingVariant(true)}
+                  className="text-xs text-[#C8952E] hover:underline"
+                >
+                  + Add Variant
+                </button>
+              </div>
             </div>
 
             <table className="w-full text-sm">
@@ -660,6 +672,13 @@ export default function ProductProfilePage() {
         danger
         onConfirm={() => confirm?.onConfirm()}
         onCancel={() => setConfirm(null)}
+      />
+
+      <BarcodeLabels
+        open={barcodeOpen}
+        onClose={() => setBarcodeOpen(false)}
+        productName={product.name_en}
+        variants={product.variants}
       />
     </div>
   )
