@@ -34,7 +34,7 @@ function Barcode({ value }: { value: string }) {
       }
     }
   }, [value])
-  return <svg ref={ref} />
+  return <svg ref={ref} className="w-full max-w-[220px] h-auto" />
 }
 
 export default function BarcodeLabels({ open, onClose, items }: Props) {
@@ -64,7 +64,7 @@ export default function BarcodeLabels({ open, onClose, items }: Props) {
           {validVariants.length === 0 ? (
             <p className="p-6 text-sm text-[#6B6560] print:hidden">No variants with a valid SKU to print.</p>
           ) : (
-            <div className="p-6 grid grid-cols-2 gap-4 print:grid-cols-3 print:gap-2 print:p-2">
+            <div id="barcode-print-area" className="p-6 grid grid-cols-2 gap-4 print:grid-cols-3 print:gap-2 print:p-2">
               {validVariants.map((v, i) => (
                 <div key={i}
                   className="border border-[#E0DDDA] rounded-lg p-3 flex flex-col items-center text-center print:border-black/30 break-inside-avoid">
