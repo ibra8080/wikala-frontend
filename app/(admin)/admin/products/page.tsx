@@ -139,8 +139,10 @@ export default function AdminProductsPage() {
     if (!confirm('Are you sure you want to permanently delete this product?')) return
     setActionLoading(productId)
     try {
-      await api.delete(`/products/admin/${productId}/`)
+      await api.delete(`/products/admin/${productId}/delete/`)
       await fetchProducts()
+    } catch {
+      alert('Failed to delete product. Please try again.')
     } finally {
       setActionLoading(null)
     }
