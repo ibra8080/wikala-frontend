@@ -674,12 +674,18 @@ export default function ProductProfilePage() {
         onCancel={() => setConfirm(null)}
       />
 
-      <BarcodeLabels
-        open={barcodeOpen}
-        onClose={() => setBarcodeOpen(false)}
-        productName={product.name_en}
-        variants={product.variants}
-      />
+      {product && (
+        <BarcodeLabels
+          open={barcodeOpen}
+          onClose={() => setBarcodeOpen(false)}
+          items={product.variants.map(v => ({
+            sku: v.sku,
+            productName: product.name_en,
+            color: v.color,
+            size: v.size,
+          }))}
+        />
+      )}
     </div>
   )
 }

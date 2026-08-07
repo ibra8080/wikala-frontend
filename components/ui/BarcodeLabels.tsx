@@ -3,8 +3,9 @@ import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import JsBarcode from 'jsbarcode'
 
-interface LabelVariant {
+interface LabelItem {
   sku: string
+  productName: string
   color?: string
   size?: string
 }
@@ -12,8 +13,7 @@ interface LabelVariant {
 interface Props {
   open: boolean
   onClose: () => void
-  productName: string
-  variants: LabelVariant[]
+  items: LabelItem[]
 }
 
 function Barcode({ value }: { value: string }) {
@@ -37,10 +37,10 @@ function Barcode({ value }: { value: string }) {
   return <svg ref={ref} />
 }
 
-export default function BarcodeLabels({ open, onClose, productName, variants }: Props) {
+export default function BarcodeLabels({ open, onClose, items }: Props) {
   if (!open) return null
 
-  const validVariants = variants.filter((v) => v.sku && v.sku.trim())
+  const validVariants = items.filter((v) => v.sku && v.sku.trim())
 
   const handlePrint = () => window.print()
 
@@ -69,7 +69,7 @@ export default function BarcodeLabels({ open, onClose, productName, variants }: 
                 <div key={i}
                   className="border border-[#E0DDDA] rounded-lg p-3 flex flex-col items-center text-center print:border-black/30 break-inside-avoid">
                   <p className="text-[11px] font-medium text-[#1B2A4A] leading-tight mb-1 line-clamp-2">
-                    {productName}
+                    {v.productName}
                   </p>
                   {(v.color || v.size) && (
                     <p className="text-[10px] text-[#6B6560] mb-1">

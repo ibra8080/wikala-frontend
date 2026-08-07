@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 import Link from 'next/link'
+import BarcodeLabels from '@/components/ui/BarcodeLabels'
+
+interface ProductVariant {
+  sku: string
+  color: string
+  size: string
+}
 
 interface Product {
   id: number
@@ -16,6 +23,7 @@ interface Product {
   created_at: string
   seller: number
   validation_issues: string[]
+  variants?: ProductVariant[]
 }
 
 const statusStyles: Record<string, string> = {
@@ -141,6 +149,7 @@ export default function AdminProductsPage() {
   const [exporting, setExporting] = useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [statusUpdating, setStatusUpdating] = useState(false)
+  const [barcodeOpen, setBarcodeOpen] = useState(false)
 
   const toggleSelect = (id: number) => {
     setSelectedIds(prev =>
@@ -225,6 +234,15 @@ export default function AdminProductsPage() {
           <p className="text-sm text-[#6B6560] mt-1">{products.length} total products</p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setBarcodeOpen(true)}
+            disabled={selectedIds.length === 0}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white border border-[#E0DDDA] text-[#1B2A4A] hover:bg-[#F5F4F0] transition disabled:opacity-50"
+          >
+            {selectedIds.length
+              ? `🏷️ Print ${selectedIds.length} Barcodes`
+              : '🏷️ Select products to print'}
+          </button>
           {filter === 'approved' && (
             <>
               <button
@@ -423,6 +441,21 @@ export default function AdminProductsPage() {
           </tbody>
         </table>
       </div>
+
+      <BarcodeLabels
+        open={barcodeOpen}
+        onClose={() => setBarcodeOpen(false)}
+        items={filtered
+          .filter(p => selectedIds.includes(p.id))
+          .flatMap(p =>
+            (p.variants || []).map(v => ({
+              sku: v.sku,
+              productName: p.name_en,
+              color: v.color,
+              size: v.size,
+            }))
+          )}
+      />
     </div>
   )
 }
