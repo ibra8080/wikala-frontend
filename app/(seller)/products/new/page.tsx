@@ -199,6 +199,10 @@ export default function NewProductPage() {
   }
 
   const handleSubmit = async (submitForReview: boolean) => {
+    if (submitForReview && !form.category) {
+      setError('Please select a category before submitting. It cannot be changed after approval.')
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -360,7 +364,7 @@ export default function NewProductPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">Category</label>
+                <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">Category <span className="text-red-400">*</span></label>
                 <select name="category" value={form.category} onChange={handleChange} className={inputClass}>
                   <option value="">Select category...</option>
                   {categories.map(cat => (
