@@ -51,17 +51,31 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  /* Hide everything by default */
+  body > * {
+    display: none !important;
   }
-  #barcode-print-area,
-  #barcode-print-area * {
-    visibility: visible;
+  /* Show only the print portal (rendered at document.body level) */
+  body > div:has(#barcode-print-area) {
+    display: block !important;
+    position: static !important;
+    background: white !important;
+    backdrop-filter: none !important;
   }
+  body > div:has(#barcode-print-area) * {
+    visibility: visible !important;
+  }
+  /* Neutralize the modal overlay/card chrome for print */
   #barcode-print-area {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    position: static !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+  /* Hide the modal header (Print/close buttons) */
+  .print\:hidden {
+    display: none !important;
+  }
+  @page {
+    margin: 1cm;
   }
 }
