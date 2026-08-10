@@ -159,6 +159,16 @@ export default function AdminProductsPage() {
     )
   }
 
+  const toggleSelectAll = (filteredList: typeof products) => {
+    const allSel = filteredList.length > 0 && filteredList.every(p => selectedIds.includes(p.id))
+    if (allSel) {
+      const ids = new Set(filteredList.map(p => p.id))
+      setSelectedIds(prev => prev.filter(id => !ids.has(id)))
+    } else {
+      setSelectedIds([...new Set([...selectedIds, ...filteredList.map(p => p.id)])])
+    }
+  }
+
   const handleShopifyExport = async () => {
     setExporting(true)
     try {
@@ -221,6 +231,8 @@ export default function AdminProductsPage() {
   }
 
   const filtered = products.filter(p => filter === 'all' ? true : p.status === filter)
+  const allSelected = filtered.length > 0 && filtered.every(p => selectedIds.includes(p.id))
+  const someSelected = filtered.some(p => selectedIds.includes(p.id))
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -306,7 +318,16 @@ export default function AdminProductsPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
-              <th className="px-4 py-4 w-10" />
+              <th className="px-4 py-4 w-10">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={el => { if (el) el.indeterminate = !allSelected && someSelected }}
+                  onChange={() => toggleSelectAll(filtered)}
+                  className="w-4 h-4 accent-[#C8952E] cursor-pointer"
+                  title={allSelected ? 'Deselect all' : 'Select all'}
+                />
+              </th>
               <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Product</th>
               <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Code</th>
               <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Price</th>
