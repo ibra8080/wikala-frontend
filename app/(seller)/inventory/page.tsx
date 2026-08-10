@@ -37,18 +37,15 @@ interface ShipmentItem {
 interface InventoryItem {
   id: number
   variant_sku: string
+  product_name: string
+  product_code: string
+  variant_color: string
+  variant_size: string
   quantity_in_egypt: number
   quantity_in_transit: number
   quantity_in_germany: number
   quantity_sold: number
   quantity_available: number
-}
-
-interface Product {
-  id: number
-  product_code: string
-  name_en: string
-  status: string
 }
 
 const statusStyles: Record<string, string> = {
@@ -71,22 +68,6 @@ const deliveryMethodLabels: Record<string, string> = {
   drop_off: 'Drop Off at Wikala',
 }
 
-const productStatusStyles: Record<string, string> = {
-  in_warehouse_egypt: 'bg-orange-50 text-orange-700 border border-orange-200',
-  in_transit: 'bg-cyan-50 text-cyan-700 border border-cyan-200',
-  in_warehouse_germany: 'bg-teal-50 text-teal-700 border border-teal-200',
-  listed: 'bg-green-50 text-green-700 border border-green-200',
-  awaiting_seller_shipment: 'bg-purple-50 text-purple-700 border border-purple-200',
-}
-
-const productStatusLabels: Record<string, string> = {
-  awaiting_seller_shipment: 'Awaiting Shipment',
-  in_warehouse_egypt: 'In Egypt Warehouse',
-  in_transit: 'In Transit',
-  in_warehouse_germany: 'In Germany Warehouse',
-  listed: 'Listed',
-}
-
 type Tab = 'shipments' | 'egypt' | 'germany'
 
 export default function InventoryPage() {
@@ -95,20 +76,17 @@ export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<Tab>('shipments')
   const [requests, setRequests] = useState<ShipmentRequest[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
-  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
   const fetchAll = useCallback(async () => {
     try {
-      const [reqRes, invRes, prodRes] = await Promise.all([
+      const [reqRes, invRes] = await Promise.all([
         api.get('/inventory/shipment-requests/'),
         api.get('/inventory/'),
-        api.get('/products/'),
       ])
       setRequests(reqRes.data)
       setInventory(invRes.data)
-      setProducts(prodRes.data)
     } finally {
       setLoading(false)
     }
@@ -140,13 +118,13 @@ export default function InventoryPage() {
     }
   }
 
-  const egyptProducts = products.filter(p => p.status === 'in_warehouse_egypt')
-  const germanyProducts = products.filter(p => ['in_warehouse_germany', 'listed'].includes(p.status))
+  const egyptInventory = inventory.filter(i => i.quantity_in_egypt > 0)
+  const germanyInventory = inventory.filter(i => i.quantity_in_germany > 0)
 
   const tabs = [
     { key: 'shipments' as Tab, label: 'Shipment Requests', count: requests.length },
-    { key: 'egypt' as Tab, label: 'Egypt Warehouse', count: egyptProducts.length },
-    { key: 'germany' as Tab, label: 'Germany Warehouse', count: germanyProducts.length },
+    { key: 'egypt' as Tab, label: 'Egypt Warehouse', count: egyptInventory.length },
+    { key: 'germany' as Tab, label: 'Germany Warehouse', count: germanyInventory.length },
   ]
 
   if (loading) return (
@@ -340,11 +318,11 @@ export default function InventoryPage() {
       {/* Tab: Egypt Warehouse */}
       {activeTab === 'egypt' && (
         <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
-          {egyptProducts.length === 0 ? (
+          {egyptInventory.length === 0 ? (
             <div className="p-16 text-center">
               <p className="text-4xl mb-4">🏭</p>
-              <p className="text-lg font-semibold text-[#1B2A4A] mb-2">No products in Egypt warehouse</p>
-              <p className="text-sm text-[#6B6560]">Products will appear here after Wikala receives them.</p>
+              <p className="text-lg font-semibold text-[#1B2A4A] mb-2">No stock in Egypt warehouse</p>
+              <p className="text-sm text-[#6B6560]">Your products in the Egypt warehouse will appear here.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -352,24 +330,21 @@ export default function InventoryPage() {
               <thead>
                 <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
                   <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Product</th>
-                  <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Code</th>
-                  <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Status</th>
+                  <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">SKU</th>
+                  <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Variant</th>
+                  <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">In Egypt</th>
                 </tr>
               </thead>
               <tbody>
-                {egyptProducts.map(product => (
-                  <tr key={product.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
+                {egyptInventory.map(item => (
+                  <tr key={item.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
                     <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-[#1B2A4A]">{product.name_en}</p>
+                      <p className="text-sm font-medium text-[#1B2A4A]">{item.product_name}</p>
+                      <p className="font-mono text-xs text-[#6B6560]">{item.product_code}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="font-mono text-xs text-[#6B6560]">{product.product_code}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${productStatusStyles[product.status] ?? ''}`}>
-                        {productStatusLabels[product.status] ?? product.status}
-                      </span>
-                    </td>
+                    <td className="px-6 py-4"><p className="font-mono text-xs text-[#6B6560]">{item.variant_sku}</p></td>
+                    <td className="px-6 py-4"><p className="text-xs text-[#6B6560]">{[item.variant_color, item.variant_size].filter(Boolean).join(' / ') || '—'}</p></td>
+                    <td className="px-6 py-4"><p className="font-semibold text-[#1B2A4A]">{item.quantity_in_egypt}</p></td>
                   </tr>
                 ))}
               </tbody>
@@ -382,11 +357,11 @@ export default function InventoryPage() {
       {/* Tab: Germany Warehouse */}
       {activeTab === 'germany' && (
         <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
-          {germanyProducts.length === 0 ? (
+          {germanyInventory.length === 0 ? (
             <div className="p-16 text-center">
               <p className="text-4xl mb-4">🇩🇪</p>
-              <p className="text-lg font-semibold text-[#1B2A4A] mb-2">No products in Germany warehouse</p>
-              <p className="text-sm text-[#6B6560]">Products will appear here after they arrive in Germany.</p>
+              <p className="text-lg font-semibold text-[#1B2A4A] mb-2">No stock in Germany warehouse</p>
+              <p className="text-sm text-[#6B6560]">Your products in the Germany warehouse will appear here.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -394,60 +369,27 @@ export default function InventoryPage() {
               <thead>
                 <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
                   <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Product</th>
-                  <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Code</th>
                   <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">SKU</th>
+                  <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Variant</th>
                   <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Available</th>
                   <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">In Transit</th>
                   <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Sold</th>
-                  <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {germanyProducts.map(product => {
-                  const inv = inventory.filter(i => i.variant_sku?.startsWith(product.product_code ?? ''))
-                  return inv.length > 0 ? inv.map(item => (
-                    <tr key={item.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-[#1B2A4A]">{product.name_en}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-mono text-xs text-[#6B6560]">{product.product_code}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-mono text-xs text-[#6B6560]">{item.variant_sku}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-semibold text-[#1B2A4A]">{item.quantity_available}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-[#6B6560]">{item.quantity_in_transit}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-[#6B6560]">{item.quantity_sold}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${productStatusStyles[product.status] ?? ''}`}>
-                          {productStatusLabels[product.status] ?? product.status}
-                        </span>
-                      </td>
-                    </tr>
-                  )) : (
-                    <tr key={product.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-[#1B2A4A]">{product.name_en}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-mono text-xs text-[#6B6560]">{product.product_code}</p>
-                      </td>
-                      <td colSpan={4} className="px-6 py-4 text-xs text-[#6B6560]">No inventory data yet</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${productStatusStyles[product.status] ?? ''}`}>
-                          {productStatusLabels[product.status] ?? product.status}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {germanyInventory.map(item => (
+                  <tr key={item.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium text-[#1B2A4A]">{item.product_name}</p>
+                      <p className="font-mono text-xs text-[#6B6560]">{item.product_code}</p>
+                    </td>
+                    <td className="px-6 py-4"><p className="font-mono text-xs text-[#6B6560]">{item.variant_sku}</p></td>
+                    <td className="px-6 py-4"><p className="text-xs text-[#6B6560]">{[item.variant_color, item.variant_size].filter(Boolean).join(' / ') || '—'}</p></td>
+                    <td className="px-6 py-4"><p className="font-semibold text-[#1B2A4A]">{item.quantity_available}</p></td>
+                    <td className="px-6 py-4"><p className="text-[#6B6560]">{item.quantity_in_transit}</p></td>
+                    <td className="px-6 py-4"><p className="text-[#6B6560]">{item.quantity_sold}</p></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
             </div>
