@@ -22,6 +22,7 @@ interface Product {
   status: string
   created_at: string
   seller: number
+  seller_name?: string
   validation_issues: string[]
   variants?: ProductVariant[]
 }
@@ -476,6 +477,7 @@ export default function AdminProductsPage() {
               productName: p.name_en,
               color: v.color,
               size: v.size,
+              sellerName: p.seller_name,
             }))
           )}
       />

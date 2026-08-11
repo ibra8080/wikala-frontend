@@ -29,6 +29,7 @@ interface Product {
   product_code: string
   category: number | null
   category_name: string
+  seller_name: string
   name_en: string
   name_ar: string
   description_en: string
@@ -683,6 +684,7 @@ export default function ProductProfilePage() {
             productName: product.name_en,
             color: v.color,
             size: v.size,
+            sellerName: product.seller_name,
           }))}
         />
       )}

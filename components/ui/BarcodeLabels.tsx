@@ -8,6 +8,7 @@ interface LabelItem {
   productName: string
   color?: string
   size?: string
+  sellerName?: string
 }
 
 interface Props {
@@ -71,9 +72,9 @@ export default function BarcodeLabels({ open, onClose, items }: Props) {
                   <p className="text-[11px] font-medium text-[#1B2A4A] leading-tight mb-1 line-clamp-2">
                     {v.productName}
                   </p>
-                  {(v.color || v.size) && (
+                  {(v.color || v.size || v.sellerName) && (
                     <p className="text-[10px] text-[#6B6560] mb-1">
-                      {[v.color, v.size].filter(Boolean).join(' / ')}
+                      {[[v.color, v.size].filter(Boolean).join(' / '), v.sellerName].filter(Boolean).join(' · ')}
                     </p>
                   )}
                   <Barcode value={v.sku} />
