@@ -33,6 +33,7 @@ export default function WarehouseInventory({ warehouse }: Props) {
   const [editValues, setEditValues] = useState<Record<number, string>>({})
   const [search, setSearch] = useState('')
   const [filterMode, setFilterMode] = useState<FilterMode>('all')
+  const [sellerFilter, setSellerFilter] = useState('all')
   const [sortMode, setSortMode] = useState<SortMode>('code')
   const [scanValue, setScanValue] = useState('')
   const [scanMsg, setScanMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
@@ -109,6 +110,11 @@ export default function WarehouseInventory({ warehouse }: Props) {
     }
   }
 
+  const sellers = useMemo(
+    () => [...new Set(rows.map(r => r.seller_name).filter(Boolean))].sort(),
+    [rows]
+  )
+
   const filteredSorted = useMemo(() => {
     let list = [...rows]
     // search
@@ -120,6 +126,8 @@ export default function WarehouseInventory({ warehouse }: Props) {
         r.product_code?.toLowerCase().includes(q)
       )
     }
+    // filter by seller
+    if (sellerFilter !== 'all') list = list.filter(r => r.seller_name === sellerFilter)
     // filter by stock
     const getQty = (r: InventoryRow) => (r as unknown as Record<string, number>)[qtyField]
     if (filterMode === 'in_stock') list = list.filter(r => getQty(r) > 0)
@@ -130,7 +138,7 @@ export default function WarehouseInventory({ warehouse }: Props) {
     else if (sortMode === 'recent') list.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
     else list.sort((a, b) => (a.product_code || '').localeCompare(b.product_code || '') || (a.variant_sku || '').localeCompare(b.variant_sku || ''))
     return list
-  }, [rows, search, filterMode, sortMode, qtyField])
+  }, [rows, search, filterMode, sortMode, qtyField, sellerFilter])
 
   if (loading) {
     return (
@@ -181,6 +189,11 @@ export default function WarehouseInventory({ warehouse }: Props) {
           <option value="all">All stock</option>
           <option value="in_stock">In stock ({'>'} 0)</option>
           <option value="empty">Empty (0)</option>
+        </select>
+        <select value={sellerFilter} onChange={e => setSellerFilter(e.target.value)}
+          className="border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A]">
+          <option value="all">All sellers</option>
+          {sellers.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <select value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)}
           className="border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#1B2A4A]">
