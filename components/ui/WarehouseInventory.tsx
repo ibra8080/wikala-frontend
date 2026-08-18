@@ -132,6 +132,11 @@ export default function WarehouseInventory({ warehouse }: Props) {
     [rows]
   )
 
+  const binSuggestions = useMemo(
+    () => [...new Set(rows.map(r => (r as unknown as Record<string, string>)[binField]).filter(Boolean))].sort(),
+    [rows, binField]
+  )
+
   const filteredSorted = useMemo(() => {
     let list = [...rows]
     // search
@@ -140,7 +145,8 @@ export default function WarehouseInventory({ warehouse }: Props) {
       list = list.filter(r =>
         r.variant_sku?.toLowerCase().includes(q) ||
         r.product_name?.toLowerCase().includes(q) ||
-        r.product_code?.toLowerCase().includes(q)
+        r.product_code?.toLowerCase().includes(q) ||
+        ((r as unknown as Record<string, string>)[binField] ?? '').toLowerCase().includes(q)
       )
     }
     // filter by seller
@@ -155,7 +161,7 @@ export default function WarehouseInventory({ warehouse }: Props) {
     else if (sortMode === 'recent') list.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
     else list.sort((a, b) => (a.product_code || '').localeCompare(b.product_code || '') || (a.variant_sku || '').localeCompare(b.variant_sku || ''))
     return list
-  }, [rows, search, filterMode, sortMode, qtyField, sellerFilter])
+  }, [rows, search, filterMode, sortMode, qtyField, sellerFilter, binField])
 
   if (loading) {
     return (
@@ -174,6 +180,10 @@ export default function WarehouseInventory({ warehouse }: Props) {
           Scan a barcode to add +1, or adjust quantities manually.
         </p>
       </div>
+
+      <datalist id="bin-suggestions">
+        {binSuggestions.map(b => <option key={b} value={b} />)}
+      </datalist>
 
       {/* Scan field */}
       <div className="mb-4">
@@ -271,6 +281,7 @@ export default function WarehouseInventory({ warehouse }: Props) {
                     <input
                       type="text"
                       maxLength={50}
+                      list="bin-suggestions"
                       defaultValue={(row as unknown as Record<string, string>)[binField] ?? ''}
                       onBlur={e => saveBin(row, e.target.value)}
                       disabled={savingBinId === row.id}
