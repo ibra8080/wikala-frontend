@@ -59,6 +59,7 @@ const inputClass = "w-full border border-[#E0DDDA] rounded-lg px-3 py-2 text-sm 
 
 function Field({
   label, field, value, type = 'text', multiline = false, rich = false,
+  dir = 'ltr',
   editingField, editValues, saving,
   onEdit, onSave, onCancel, onValueChange,
 }: {
@@ -68,6 +69,7 @@ function Field({
   type?: string
   multiline?: boolean
   rich?: boolean
+  dir?: 'ltr' | 'rtl'
   editingField: string | null
   editValues: Record<string, string>
   saving: boolean
@@ -88,6 +90,7 @@ function Field({
                   value={editValues[field] ?? ''}
                   onChange={html => onValueChange(field, html)}
                   placeholder="Describe your product..."
+                  dir={dir}
                 />
                 <div className="flex gap-2 mt-2">
                   <button onClick={() => void onSave(field)}
@@ -509,7 +512,7 @@ export default function ProductProfilePage() {
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
             <h2 className="font-semibold text-[#1B2A4A] mb-2">Description</h2>
             <Field label="Description (English)" field="description_en" value={product.description_en} rich {...fieldProps} />
-            <Field label="Description (Arabic)" field="description_ar" value={product.description_ar} multiline {...fieldProps} />
+            <Field label="Description (Arabic)" field="description_ar" value={product.description_ar} rich dir="rtl" {...fieldProps} />
           </div>
 
           {/* Technical Specs */}

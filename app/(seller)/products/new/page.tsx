@@ -334,15 +334,22 @@ export default function NewProductPage() {
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Description (Arabic) <span className="text-[#6B6560] text-xs font-normal">optional</span>
                 </label>
-                <textarea name="description_ar" value={form.description_ar} onChange={handleChange}
-                  rows={4} dir="rtl" placeholder="اكتب وصف المنتج..." className={inputClass + ' resize-none'} />
+                <RichTextEditor
+                  value={form.description_ar}
+                  onChange={(html) => setForm(prev => ({ ...prev, description_ar: html }))}
+                  placeholder="اكتب وصف المنتج..."
+                  dir="rtl"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
                   Description (German) <span className="text-[#6B6560] text-xs font-normal">optional</span>
                 </label>
-                <textarea name="description_de" value={form.description_de} onChange={handleChange}
-                  rows={4} placeholder="Produkt beschreiben..." className={inputClass + ' resize-none'} />
+                <RichTextEditor
+                  value={form.description_de}
+                  onChange={(html) => setForm(prev => ({ ...prev, description_de: html }))}
+                  placeholder="Produkt beschreiben..."
+                />
               </div>
             </div>
 
