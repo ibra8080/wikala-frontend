@@ -8,6 +8,7 @@ import Link from 'next/link'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import RichTextEditor from '@/components/ui/RichTextEditor'
 import BarcodeLabels from '@/components/ui/BarcodeLabels'
+import { stripArabic, asciiOnly } from '@/lib/textFilters'
 
 interface ProductImage {
   id: number
@@ -91,6 +92,7 @@ function Field({
                   onChange={html => onValueChange(field, html)}
                   placeholder="Describe your product..."
                   dir={dir}
+                  stripArabic={dir !== 'rtl'}
                 />
                 <div className="flex gap-2 mt-2">
                   <button onClick={() => void onSave(field)}
@@ -371,7 +373,8 @@ export default function ProductProfilePage() {
     onEdit: startEdit,
     onSave: saveField,
     onCancel: cancelEdit,
-    onValueChange: (field: string, value: string) => setEditValues(p => ({ ...p, [field]: value })),
+    onValueChange: (field: string, value: string) =>
+      setEditValues(p => ({ ...p, [field]: (field === 'name_en' || field === 'name_de') ? stripArabic(value) : value })),
   }
 
   if (loading) return (
@@ -576,7 +579,7 @@ export default function ProductProfilePage() {
                     <td className="py-2">
                       {editingVariant === v.id ? (
                         <input value={variantEdit.color}
-                          onChange={e => setVariantEdit(p => ({ ...p, color: e.target.value }))}
+                          onChange={e => setVariantEdit(p => ({ ...p, color: asciiOnly(e.target.value) }))}
                           className="w-20 border border-[#E0DDDA] rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1B2A4A]"
                         />
                       ) : (
@@ -586,7 +589,7 @@ export default function ProductProfilePage() {
                     <td className="py-2">
                       {editingVariant === v.id ? (
                         <input value={variantEdit.size}
-                          onChange={e => setVariantEdit(p => ({ ...p, size: e.target.value }))}
+                          onChange={e => setVariantEdit(p => ({ ...p, size: asciiOnly(e.target.value) }))}
                           className="w-16 border border-[#E0DDDA] rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1B2A4A]"
                         />
                       ) : (
@@ -629,14 +632,14 @@ export default function ProductProfilePage() {
                     <td className="py-2 text-xs text-[#6B6560]">—</td>
                     <td className="py-2">
                       <input value={newVariant.color}
-                        onChange={e => setNewVariant(p => ({ ...p, color: e.target.value }))}
+                        onChange={e => setNewVariant(p => ({ ...p, color: asciiOnly(e.target.value) }))}
                         placeholder="Color"
                         className="w-20 border border-[#E0DDDA] rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1B2A4A]"
                       />
                     </td>
                     <td className="py-2">
                       <input value={newVariant.size}
-                        onChange={e => setNewVariant(p => ({ ...p, size: e.target.value }))}
+                        onChange={e => setNewVariant(p => ({ ...p, size: asciiOnly(e.target.value) }))}
                         placeholder="Size"
                         className="w-16 border border-[#E0DDDA] rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1B2A4A]"
                       />

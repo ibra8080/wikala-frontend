@@ -3,15 +3,17 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { useEffect } from 'react'
+import { stripArabic as stripAr } from '@/lib/textFilters'
 
 interface Props {
   value: string
   onChange: (html: string) => void
   placeholder?: string
   dir?: 'ltr' | 'rtl'
+  stripArabic?: boolean
 }
 
-export default function RichTextEditor({ value, onChange, placeholder, dir = 'ltr' }: Props) {
+export default function RichTextEditor({ value, onChange, placeholder, dir = 'ltr', stripArabic = false }: Props) {
   const editor = useEditor({
     extensions: [StarterKit],
     content: value,
@@ -23,7 +25,8 @@ export default function RichTextEditor({ value, onChange, placeholder, dir = 'lt
       },
     },
     onUpdate({ editor }) {
-      onChange(editor.getHTML())
+      const html = editor.getHTML()
+      onChange(stripArabic ? stripAr(html) : html)
     },
   })
 

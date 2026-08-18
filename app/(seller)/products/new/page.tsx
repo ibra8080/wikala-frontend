@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import api from '@/lib/axios'
 import Link from 'next/link'
 import RichTextEditor from '@/components/ui/RichTextEditor'
+import { stripArabic, asciiOnly } from '@/lib/textFilters'
 
 interface Variant {
   color: string
@@ -113,7 +114,9 @@ export default function NewProductPage() {
   ])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    const filtered = (name === 'name_en' || name === 'name_de') ? stripArabic(value) : value
+    setForm(prev => ({ ...prev, [name]: filtered }))
   }
 
   // Images
@@ -186,7 +189,8 @@ export default function NewProductPage() {
 
   // Variants
   const handleVariantChange = (index: number, field: keyof Variant, value: string) => {
-    setVariants(prev => prev.map((v, i) => i === index ? { ...v, [field]: value } : v))
+    const filtered = (field === 'color' || field === 'size') ? asciiOnly(value) : value
+    setVariants(prev => prev.map((v, i) => i === index ? { ...v, [field]: filtered } : v))
   }
 
   const addVariant = () => {
@@ -328,6 +332,7 @@ export default function NewProductPage() {
                   value={form.description_en}
                   onChange={(html) => setForm(prev => ({ ...prev, description_en: html }))}
                   placeholder="Describe your product..."
+                  stripArabic
                 />
               </div>
               <div>
@@ -349,6 +354,7 @@ export default function NewProductPage() {
                   value={form.description_de}
                   onChange={(html) => setForm(prev => ({ ...prev, description_de: html }))}
                   placeholder="Produkt beschreiben..."
+                  stripArabic
                 />
               </div>
             </div>
