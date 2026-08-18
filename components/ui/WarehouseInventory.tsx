@@ -16,6 +16,8 @@ interface InventoryRow {
   quantity_in_germany: number
   quantity_sold: number
   quantity_available: number
+  bin_location_egypt: string
+  bin_location_germany: string
   created_at: string | null
 }
 
@@ -31,6 +33,7 @@ export default function WarehouseInventory({ warehouse }: Props) {
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<number | null>(null)
   const [editValues, setEditValues] = useState<Record<number, string>>({})
+  const [savingBinId, setSavingBinId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [filterMode, setFilterMode] = useState<FilterMode>('all')
   const [sellerFilter, setSellerFilter] = useState('all')
@@ -40,6 +43,7 @@ export default function WarehouseInventory({ warehouse }: Props) {
   const scanRef = useRef<HTMLInputElement>(null)
 
   const qtyField = warehouse === 'egypt' ? 'quantity_in_egypt' : 'quantity_in_germany'
+  const binField = warehouse === 'egypt' ? 'bin_location_egypt' : 'bin_location_germany'
   const title = warehouse === 'egypt' ? 'Egypt Warehouse' : 'Germany Warehouse'
   const qtyLabel = warehouse === 'egypt' ? 'In Egypt' : 'In Germany'
 
@@ -85,6 +89,19 @@ export default function WarehouseInventory({ warehouse }: Props) {
       alert('Failed to update quantity.')
     } finally {
       setSavingId(null)
+    }
+  }
+
+  const saveBin = async (row: InventoryRow, value: string) => {
+    if (value === ((row as unknown as Record<string, string>)[binField] ?? '')) return
+    setSavingBinId(row.id)
+    try {
+      const res = await api.patch(`/inventory/admin/${row.id}/bin-location/`, { [binField]: value })
+      setRows(prev => prev.map(r => (r.id === row.id ? { ...r, ...res.data } : r)))
+    } catch {
+      alert('Failed to update bin location.')
+    } finally {
+      setSavingBinId(null)
     }
   }
 
@@ -211,7 +228,7 @@ export default function WarehouseInventory({ warehouse }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
-              {['Product', 'SKU', 'Variant', 'Seller', qtyLabel, 'Qty'].map(h => (
+              {['Product', 'SKU', 'Variant', 'Seller', qtyLabel, 'Qty', 'Bin'].map(h => (
                 <th key={h} className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-4 py-3 whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -250,11 +267,22 @@ export default function WarehouseInventory({ warehouse }: Props) {
                       )}
                     </div>
                   </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="text"
+                      maxLength={50}
+                      defaultValue={(row as unknown as Record<string, string>)[binField] ?? ''}
+                      onBlur={e => saveBin(row, e.target.value)}
+                      disabled={savingBinId === row.id}
+                      placeholder="—"
+                      className="w-28 border border-[#E0DDDA] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#1B2A4A] disabled:opacity-50"
+                    />
+                  </td>
                 </tr>
               )
             })}
             {filteredSorted.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-[#6B6560]">No inventory found.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-[#6B6560]">No inventory found.</td></tr>
             )}
           </tbody>
         </table>
