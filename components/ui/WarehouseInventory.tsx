@@ -34,6 +34,9 @@ export default function WarehouseInventory({ warehouse }: Props) {
   const [savingId, setSavingId] = useState<number | null>(null)
   const [editValues, setEditValues] = useState<Record<number, string>>({})
   const [savingBinId, setSavingBinId] = useState<number | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [bulkBin, setBulkBin] = useState('')
+  const [bulkSaving, setBulkSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [filterMode, setFilterMode] = useState<FilterMode>('all')
   const [sellerFilter, setSellerFilter] = useState('all')
@@ -103,6 +106,42 @@ export default function WarehouseInventory({ warehouse }: Props) {
     } finally {
       setSavingBinId(null)
     }
+  }
+
+  const fillDownSameProduct = async (row: InventoryRow) => {
+    const value = (row as unknown as Record<string, string>)[binField] ?? ''
+    const targets = rows.filter(r => r.product_code === row.product_code && r.id !== row.id)
+    if (targets.length === 0) return
+    if (!confirm(`Apply bin "${value || '(empty)'}" to ${targets.length} other variant(s) of this product?`)) return
+    for (const t of targets) {
+      await saveBin(t, value)
+    }
+  }
+
+  const applyBulkBin = async () => {
+    const ids = [...selectedIds]
+    if (ids.length === 0) return
+    if (!confirm(`Apply bin "${bulkBin || '(empty)'}" to ${ids.length} item(s)?`)) return
+    setBulkSaving(true)
+    try {
+      const targets = rows.filter(r => selectedIds.has(r.id))
+      for (const t of targets) {
+        await saveBin(t, bulkBin)
+      }
+      setSelectedIds(new Set())
+      setBulkBin('')
+    } finally {
+      setBulkSaving(false)
+    }
+  }
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   // Scanner: SKU + Enter → +1 on that variant
@@ -234,10 +273,41 @@ export default function WarehouseInventory({ warehouse }: Props) {
         </span>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 mb-3 p-3 bg-[#F5F4F0] border border-[#E0DDDA] rounded-lg">
+          <span className="text-sm font-medium text-[#1B2A4A]">{selectedIds.size} selected</span>
+          <input
+            type="text"
+            maxLength={50}
+            list="bin-suggestions"
+            value={bulkBin}
+            onChange={e => setBulkBin(e.target.value)}
+            placeholder="Bin location..."
+            className="border border-[#E0DDDA] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#1B2A4A]"
+          />
+          <button onClick={applyBulkBin} disabled={bulkSaving}
+            className="bg-[#1B2A4A] text-white px-3 py-1.5 rounded-lg text-xs disabled:opacity-50 whitespace-nowrap">
+            {bulkSaving ? 'Applying...' : 'Apply to selected'}
+          </button>
+          <button onClick={() => setSelectedIds(new Set())}
+            className="text-xs text-[#6B6560] hover:text-[#1B2A4A]">Clear</button>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-[#E0DDDA] overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
+              <th className="px-4 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={filteredSorted.length > 0 && filteredSorted.every(r => selectedIds.has(r.id))}
+                  onChange={e => {
+                    if (e.target.checked) setSelectedIds(new Set(filteredSorted.map(r => r.id)))
+                    else setSelectedIds(new Set())
+                  }}
+                />
+              </th>
               {['Product', 'SKU', 'Variant', 'Seller', qtyLabel, 'Qty', 'Bin'].map(h => (
                 <th key={h} className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-4 py-3 whitespace-nowrap">{h}</th>
               ))}
@@ -250,6 +320,13 @@ export default function WarehouseInventory({ warehouse }: Props) {
               const isDirty = edited !== undefined && edited !== String(currentQty)
               return (
                 <tr key={row.id} className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8]">
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(row.id)}
+                      onChange={() => toggleSelect(row.id)}
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <p className="font-medium text-[#1B2A4A]">{row.product_name}</p>
                     <p className="text-xs text-[#6B6560] font-mono">{row.product_code}</p>
@@ -278,22 +355,30 @@ export default function WarehouseInventory({ warehouse }: Props) {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <input
-                      type="text"
-                      maxLength={50}
-                      list="bin-suggestions"
-                      defaultValue={(row as unknown as Record<string, string>)[binField] ?? ''}
-                      onBlur={e => saveBin(row, e.target.value)}
-                      disabled={savingBinId === row.id}
-                      placeholder="—"
-                      className="w-28 border border-[#E0DDDA] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#1B2A4A] disabled:opacity-50"
-                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        key={`${row.id}-${(row as unknown as Record<string, string>)[binField]}`}
+                        type="text"
+                        maxLength={50}
+                        list="bin-suggestions"
+                        defaultValue={(row as unknown as Record<string, string>)[binField] ?? ''}
+                        onBlur={e => saveBin(row, e.target.value)}
+                        disabled={savingBinId === row.id}
+                        placeholder="—"
+                        className="w-28 border border-[#E0DDDA] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#1B2A4A] disabled:opacity-50"
+                      />
+                      <button
+                        onClick={() => fillDownSameProduct(row)}
+                        title="Apply to other variants of this product"
+                        className="text-[#6B6560] hover:text-[#1B2A4A] px-1"
+                      >↓</button>
+                    </div>
                   </td>
                 </tr>
               )
             })}
             {filteredSorted.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-[#6B6560]">No inventory found.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-[#6B6560]">No inventory found.</td></tr>
             )}
           </tbody>
         </table>
