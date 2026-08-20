@@ -33,6 +33,7 @@ interface Product {
   seller_name: string
   name_en: string
   name_ar: string
+  name_de: string
   description_en: string
   description_ar: string
   price: string
@@ -493,15 +494,9 @@ export default function ProductProfilePage() {
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
             <h2 className="font-semibold text-[#1B2A4A] mb-2">Basic Information</h2>
 
-            {/* Name — read only */}
-            <div className="py-3 border-b border-[#F5F4F0]">
-              <p className="text-xs text-[#6B6560] mb-1">Product Name (English)</p>
-              <p className="text-sm font-medium text-[#1B2A4A]">{product.name_en}</p>
-            </div>
-            <div className="py-3 border-b border-[#F5F4F0]">
-              <p className="text-xs text-[#6B6560] mb-1">Product Name (Arabic)</p>
-              <p className="text-sm font-medium text-[#1B2A4A]" dir="rtl">{product.name_ar}</p>
-            </div>
+            <Field label="Product Name (English)" field="name_en" value={product.name_en} {...fieldProps} />
+            <Field label="Product Name (Arabic)" field="name_ar" value={product.name_ar} dir="rtl" {...fieldProps} />
+            <Field label="Product Name (German)" field="name_de" value={product.name_de} {...fieldProps} />
 
             <div className="py-3 border-b border-[#F5F4F0]">
               <p className="text-xs text-[#6B6560] mb-1">Category</p>
