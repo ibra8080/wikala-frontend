@@ -126,9 +126,9 @@ export default function NewProductPage() {
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
     const MAX_SIZE = 5 * 1024 * 1024 // 5MB
 
-    // حد أقصى 10 صور
-    if (images.length + files.length > 10) {
-      setError('Maximum 10 images allowed per product.')
+    // حد أقصى 12 صورة
+    if (images.length + files.length > 12) {
+      setError('Maximum 12 images allowed per product.')
       e.target.value = ''
       return
     }
@@ -390,7 +390,7 @@ export default function NewProductPage() {
             {/* Images */}
             <div>
               <label className="block text-sm font-medium text-[#1B2A4A] mb-1.5">
-                Product Images <span className="text-[#6B6560] font-normal">(min 1, max 10)</span>
+                Product Images <span className="text-[#6B6560] font-normal">(min 1, max 12)</span>
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                 {images.map((img, i) => (
@@ -404,7 +404,7 @@ export default function NewProductPage() {
                     </button>
                   </div>
                 ))}
-                {images.length < 10 && (
+                {images.length < 12 && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="aspect-square rounded-xl border-2 border-dashed border-[#E0DDDA] hover:border-[#C8952E] transition flex flex-col items-center justify-center text-[#6B6560] hover:text-[#C8952E]"
@@ -426,7 +426,7 @@ export default function NewProductPage() {
               <div className="mt-3 bg-[#F5F4F0] rounded-xl px-4 py-3 border border-[#E0DDDA]">
                 <p className="text-xs font-semibold text-[#1B2A4A] mb-1">📷 Image Guidelines</p>
                 <ul className="text-xs text-[#6B6560] space-y-0.5">
-                  <li>• Max 10 images per product, max 5MB per image</li>
+                  <li>• Max 12 images per product, max 5MB per image</li>
                   <li>• Recommended size: 2048 × 2048 px (square 1:1)</li>
                   <li>• Formats: JPG, PNG, WebP</li>
                   <li>• White or neutral background preferred</li>
