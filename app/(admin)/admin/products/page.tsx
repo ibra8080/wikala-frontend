@@ -153,6 +153,17 @@ export default function AdminProductsPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [barcodeOpen, setBarcodeOpen] = useState(false)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [selectedSkus, setSelectedSkus] = useState<Set<string>>(new Set())
+
+  const toggleSku = (sku: string) => {
+    setSelectedSkus(prev => {
+      const next = new Set(prev)
+      if (next.has(sku)) next.delete(sku)
+      else next.add(sku)
+      return next
+    })
+  }
 
   const toggleSelect = (id: number) => {
     setSelectedIds(prev =>
@@ -251,12 +262,16 @@ export default function AdminProductsPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setBarcodeOpen(true)}
-            disabled={selectedIds.length === 0}
+            disabled={selectedIds.length === 0 && selectedSkus.size === 0}
             className="px-4 py-2 rounded-lg text-sm font-medium bg-white border border-[#E0DDDA] text-[#1B2A4A] hover:bg-[#F5F4F0] transition disabled:opacity-50"
           >
-            {selectedIds.length
-              ? `🏷️ Print ${selectedIds.length} Barcodes`
-              : '🏷️ Select products to print'}
+            {(() => {
+              const total = new Set<string>()
+              filtered.forEach(p => (p.variants || []).forEach(v => {
+                if (v.sku && (selectedIds.includes(p.id) || selectedSkus.has(v.sku))) total.add(v.sku)
+              }))
+              return total.size ? `🏷️ Print ${total.size} Barcodes` : '🏷️ Select products to print'
+            })()}
           </button>
           {filter === 'approved' && (
             <>
@@ -329,6 +344,7 @@ export default function AdminProductsPage() {
                   title={allSelected ? 'Deselect all' : 'Select all'}
                 />
               </th>
+              <th className="px-3 py-4 w-8" />
               <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Product</th>
               <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Code</th>
               <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">Price</th>
@@ -348,6 +364,17 @@ export default function AdminProductsPage() {
                       onChange={() => toggleSelect(product.id)}
                       className="w-4 h-4 accent-[#C8952E] cursor-pointer"
                     />
+                  </td>
+                  <td className="px-3 py-4">
+                    {(product.variants?.length ?? 0) > 0 && (
+                      <button
+                        onClick={() => setExpandedId(expandedId === product.id ? null : product.id)}
+                        className="text-[#6B6560] hover:text-[#1B2A4A] transition"
+                        title="Show variants"
+                      >
+                        {expandedId === product.id ? '▾' : '▸'}
+                      </button>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5">
@@ -431,10 +458,33 @@ export default function AdminProductsPage() {
                   </td>
                 </tr>
 
+                {expandedId === product.id && (product.variants?.length ?? 0) > 0 && (
+                  <tr className="bg-[#FAFAF8] border-b border-[#E0DDDA]">
+                    <td colSpan={8} className="px-6 py-3">
+                      <div className="space-y-2 pl-8">
+                        {product.variants!.filter(v => v.sku).map(v => (
+                          <label key={v.sku} className="flex items-center gap-3 text-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedSkus.has(v.sku)}
+                              onChange={() => toggleSku(v.sku)}
+                              className="w-4 h-4 accent-[#C8952E] cursor-pointer"
+                            />
+                            <span className="font-mono text-xs text-[#1B2A4A]">{v.sku}</span>
+                            <span className="text-xs text-[#6B6560]">
+                              {[v.color, v.size].filter(Boolean).join(' / ') || '—'}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
                 {/* Reject Form */}
                 {rejectingId === product.id && (
                   <tr key={`reject-${product.id}`} className="bg-red-50 border-b border-[#E0DDDA]">
-                    <td colSpan={6} className="px-6 py-4">
+                    <td colSpan={7} className="px-6 py-4">
                       <div className="flex gap-3 items-center">
                         <input type="text" value={rejectReason}
                           onChange={e => setRejectReason(e.target.value)}
@@ -469,17 +519,26 @@ export default function AdminProductsPage() {
       <BarcodeLabels
         open={barcodeOpen}
         onClose={() => setBarcodeOpen(false)}
-        items={filtered
-          .filter(p => selectedIds.includes(p.id))
-          .flatMap(p =>
-            (p.variants || []).map(v => ({
-              sku: v.sku,
-              productName: p.name_en,
-              color: v.color,
-              size: v.size,
-              sellerName: p.seller_name,
-            }))
-          )}
+        items={(() => {
+          const map = new Map<string, { sku: string; productName: string; color?: string; size?: string; sellerName?: string }>()
+          filtered.forEach(p => {
+            (p.variants || []).forEach(v => {
+              if (!v.sku) return
+              const productSelected = selectedIds.includes(p.id)
+              const skuSelected = selectedSkus.has(v.sku)
+              if (productSelected || skuSelected) {
+                map.set(v.sku, {
+                  sku: v.sku,
+                  productName: p.name_en,
+                  color: v.color,
+                  size: v.size,
+                  sellerName: p.seller_name,
+                })
+              }
+            })
+          })
+          return [...map.values()]
+        })()}
       />
     </div>
   )
