@@ -1,10 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 import Link from 'next/link'
+import BarcodeLabels from '@/components/ui/BarcodeLabels'
+
+interface Variant {
+  id: number
+  color?: string
+  size?: string
+  sku: string
+  external_barcode?: string
+}
 
 interface Product {
   id: number
@@ -14,6 +23,8 @@ interface Product {
   price: string
   status: string
   created_at: string
+  variants?: Variant[]
+  seller_name?: string
 }
 
 const statusStyles: Record<string, string> = {
@@ -45,6 +56,30 @@ export default function ProductsPage() {
   const { user, _hasHydrated } = useAuthStore()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [selectedSkus, setSelectedSkus] = useState<Set<string>>(new Set())
+  const [printOpen, setPrintOpen] = useState(false)
+
+  const toggleSku = (sku: string) => {
+    setSelectedSkus(prev => {
+      const next = new Set(prev)
+      if (next.has(sku)) next.delete(sku)
+      else next.add(sku)
+      return next
+    })
+  }
+
+  const printItems = products.flatMap(p =>
+    (p.variants ?? [])
+      .filter(v => v.sku && selectedSkus.has(v.sku))
+      .map(v => ({
+        sku: v.sku,
+        productName: p.name_en,
+        color: v.color,
+        size: v.size,
+        sellerName: p.seller_name,
+      }))
+  )
 
   useEffect(() => {
     if (!_hasHydrated) return
@@ -126,12 +161,31 @@ export default function ProductsPage() {
         </div>
       )}
 
+      {selectedSkus.size > 0 && (
+        <div className="hidden md:flex items-center gap-3 mb-3">
+          <span className="text-sm text-[#6B6560]">{selectedSkus.size} SKU(s) selected</span>
+          <button
+            onClick={() => setPrintOpen(true)}
+            className="bg-[#1B2A4A] text-white px-4 py-2 rounded-lg text-sm font-medium"
+          >
+            Print selected barcodes
+          </button>
+          <button
+            onClick={() => setSelectedSkus(new Set())}
+            className="text-sm text-[#6B6560] hover:text-[#1B2A4A]"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {/* Products Table — desktop */}
       {products.length > 0 && (
         <div className="hidden md:block bg-white rounded-2xl border border-[#E0DDDA] overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#E0DDDA] bg-[#F5F4F0]">
+                <th className="px-4 py-4 w-10" />
                 <th className="text-left text-xs font-semibold text-[#6B6560] uppercase tracking-wide px-6 py-4">
                   Product
                 </th>
@@ -152,10 +206,21 @@ export default function ProductsPage() {
             </thead>
             <tbody>
               {products.map((product) => (
+                <Fragment key={product.id}>
                 <tr
-                  key={product.id}
                   className="border-b border-[#E0DDDA] last:border-0 hover:bg-[#FAFAF8] transition"
                 >
+                  <td className="px-4 py-4">
+                    {(product.variants?.length ?? 0) > 0 && (
+                      <button
+                        onClick={() => setExpandedId(expandedId === product.id ? null : product.id)}
+                        className="text-[#6B6560] hover:text-[#1B2A4A] transition"
+                        title="Show variants"
+                      >
+                        {expandedId === product.id ? '▾' : '▸'}
+                      </button>
+                    )}
+                  </td>
                   <td className="px-6 py-4">
                     <p className="text-sm font-medium text-[#1B2A4A]">{product.name_en}</p>
                     <p className="text-xs text-[#6B6560] mt-0.5">{product.name_ar}</p>
@@ -187,11 +252,40 @@ export default function ProductsPage() {
                     </Link>
                   </td>
                 </tr>
+                {expandedId === product.id && (product.variants?.length ?? 0) > 0 && (
+                  <tr className="bg-[#FAFAF8] border-b border-[#E0DDDA]">
+                    <td />
+                    <td colSpan={6} className="px-6 py-3">
+                      <div className="space-y-2">
+                        {product.variants!.filter(v => v.sku).map(v => (
+                          <label key={v.id} className="flex items-center gap-3 text-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedSkus.has(v.sku)}
+                              onChange={() => toggleSku(v.sku)}
+                            />
+                            <span className="font-mono text-xs text-[#1B2A4A]">{v.sku}</span>
+                            <span className="text-xs text-[#6B6560]">
+                              {[v.color, v.size].filter(Boolean).join(' / ') || '—'}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <BarcodeLabels
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        items={printItems}
+      />
     </div>
   )
 }
