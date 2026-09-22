@@ -197,7 +197,7 @@ function PricingContent() {
 
       {/* Fees Grid */}
       <section className="max-w-6xl mx-auto px-6 pb-16">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {t.fees.map((fee, i) => (
             <div key={i} className="bg-white rounded-2xl border border-[#E0DDDA] p-6 hover:border-[#C8952E] transition">
               <div className="text-3xl mb-3">{fee.icon}</div>
