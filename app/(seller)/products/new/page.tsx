@@ -107,16 +107,46 @@ export default function NewProductPage() {
     units_per_carton: '',
   })
 
+  const [noFixedCarton, setNoFixedCarton] = useState(false)
+
   const [images, setImages] = useState<ProductImage[]>([])
   const [customSpecs, setCustomSpecs] = useState<CustomSpec[]>([])
   const [variants, setVariants] = useState<Variant[]>([
     { color: '', size: '', external_barcode: '' }
   ])
 
+  const cartonFromInner = (src: typeof form) => {
+    const num = (v: string) => (v ? parseFloat(v) : 0)
+    const len = num(src.inner_length_cm)
+    const wid = num(src.inner_width_cm)
+    const hei = num(src.inner_height_cm)
+    const wtG = num(src.inner_weight_kg) // grams in state
+    return {
+      carton_length_cm: len ? String(len + 1) : '',
+      carton_width_cm: wid ? String(wid + 1) : '',
+      carton_height_cm: hei ? String(hei + 1) : '',
+      carton_weight_kg: wtG ? ((wtG / 1000) * 1.005).toFixed(3) : '',
+      units_per_carton: '1',
+    }
+  }
+
+  const applyNoFixedCarton = (checked: boolean) => {
+    setNoFixedCarton(checked)
+    if (checked) {
+      setForm(prev => ({ ...prev, ...cartonFromInner(prev) }))
+    }
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     const filtered = (name === 'name_en' || name === 'name_de') ? stripArabic(value) : value
-    setForm(prev => ({ ...prev, [name]: filtered }))
+    setForm(prev => {
+      const next = { ...prev, [name]: filtered }
+      if (noFixedCarton && name.startsWith('inner_')) {
+        return { ...next, ...cartonFromInner(next) }
+      }
+      return next
+    })
   }
 
   // Images
@@ -566,6 +596,24 @@ export default function NewProductPage() {
             </div>
 
             <div>
+              <label className="flex items-start gap-2.5 cursor-pointer bg-[#F5F4F0] border border-[#E0DDDA] rounded-lg p-3">
+                <input
+                  type="checkbox"
+                  checked={noFixedCarton}
+                  onChange={e => applyNoFixedCarton(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-[#C8952E]"
+                />
+                <span className="text-sm text-[#1B2A4A]">
+                  This product has no fixed outer packaging — Wikala may place it in its standard boxes for international shipping.
+                  <span className="block text-xs text-[#6B6560] mt-0.5">
+                    Carton dimensions will be filled automatically from the inner packaging.
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            {!noFixedCarton && (
+            <div>
               <h3 className="text-sm font-semibold text-[#1B2A4A] mb-1">Outer Packaging (carton)</h3>
               <p className="text-xs text-[#6B6560] mb-4">Dimensions and weight of the full export carton.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
@@ -585,6 +633,7 @@ export default function NewProductPage() {
                 ))}
               </div>
             </div>
+            )}
 
             <div className="flex justify-between pt-2">
               <button onClick={() => setStep(2)}
