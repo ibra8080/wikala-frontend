@@ -47,6 +47,10 @@ interface Product {
   unit_width_cm: string
   unit_height_cm: string
   units_per_carton: number
+  inner_weight_kg: string
+  inner_length_cm: string
+  inner_width_cm: string
+  inner_height_cm: string
   carton_weight_kg: string
   carton_length_cm: string
   carton_width_cm: string
@@ -528,6 +532,10 @@ export default function ProductProfilePage() {
           {/* Packaging */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6">
             <h2 className="font-semibold text-[#1B2A4A] mb-2">Packaging</h2>
+            <Field label="Inner Length (cm)" field="inner_length_cm" value={product.inner_length_cm} type="number" {...fieldProps} />
+            <Field label="Inner Width (cm)" field="inner_width_cm" value={product.inner_width_cm} type="number" {...fieldProps} />
+            <Field label="Inner Height (cm)" field="inner_height_cm" value={product.inner_height_cm} type="number" {...fieldProps} />
+            <Field label="Inner Weight (kg)" field="inner_weight_kg" value={product.inner_weight_kg} type="number" {...fieldProps} />
             <Field label="Carton Weight (kg)" field="carton_weight_kg" value={product.carton_weight_kg} type="number" {...fieldProps} />
             <Field label="Carton Length (cm)" field="carton_length_cm" value={product.carton_length_cm} type="number" {...fieldProps} />
             <Field label="Carton Width (cm)" field="carton_width_cm" value={product.carton_width_cm} type="number" {...fieldProps} />
