@@ -125,7 +125,7 @@ export default function NewProductPage() {
       carton_length_cm: len ? String(len + 1) : '',
       carton_width_cm: wid ? String(wid + 1) : '',
       carton_height_cm: hei ? String(hei + 1) : '',
-      carton_weight_kg: wtG ? ((wtG / 1000) * 1.005).toFixed(3) : '',
+      carton_weight_kg: wtG ? ((wtG / 1000) * 1.05).toFixed(3) : '',
       units_per_carton: '1',
     }
   }
