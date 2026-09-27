@@ -41,7 +41,8 @@ export default function CostCalculator({ open, onClose }: Props) {
 
   // Logistics (independent of sell price)
   const shipping = (grams / 1000) * SHIPPING_PER_KG
-  const volumeM3 = (l * w * h) / 1_000_000
+  const clampDim = (d: number) => (d > 0 ? Math.max(d, 1) : 0)
+  const volumeM3 = (clampDim(l) * clampDim(w) * clampDim(h)) / 1_000_000
   const storage = volumeM3 * STORAGE_PER_M3_MONTH * (AVG_STORAGE_DAYS / 30)
   const packing = PACKING_FEE
 
