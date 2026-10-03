@@ -177,7 +177,7 @@ export default function NewShipmentRequestPage() {
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-w-0">
 
           {/* Availability & Delivery */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6 space-y-5">
@@ -254,9 +254,9 @@ export default function NewShipmentRequestPage() {
                 </p>
               </div>
             ) : (
-              <div className="flex gap-3 mb-4">
+              <div className="flex gap-3 mb-4 min-w-0">
                 <select value={selectedVariant} onChange={e => setSelectedVariant(e.target.value)}
-                  className="flex-1 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition">
+                  className="flex-1 min-w-0 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition">
                   <option value="">Select a variant (SKU)...</option>
                   {allVariants
                     .filter(v => !items.find(i => i.variant_id === v.id))
