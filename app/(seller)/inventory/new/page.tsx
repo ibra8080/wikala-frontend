@@ -59,7 +59,7 @@ export default function NewShipmentRequestPage() {
     try {
       const res = await api.get('/products/')
       const eligible = res.data.filter(
-        (p: Product) => ['approved', 'awaiting_seller_shipment'].includes(p.status)
+        (p: Product) => ['approved', 'awaiting_seller_shipment', 'listed'].includes(p.status)
       )
       setProducts(eligible)
     } finally {
