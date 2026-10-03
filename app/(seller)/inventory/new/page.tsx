@@ -177,7 +177,7 @@ export default function NewShipmentRequestPage() {
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6">
 
           {/* Availability & Delivery */}
           <div className="bg-white rounded-2xl border border-[#E0DDDA] p-6 space-y-5">
