@@ -302,22 +302,22 @@ export default function NewShipmentRequestPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#E0DDDA]">
-                    <th className="text-left text-xs text-[#6B6560] pb-2">Product</th>
-                    <th className="text-left text-xs text-[#6B6560] pb-2">SKU</th>
-                    <th className="text-left text-xs text-[#6B6560] pb-2">Color / Size</th>
-                    <th className="text-left text-xs text-[#6B6560] pb-2">Cartons</th>
-                    <th className="text-left text-xs text-[#6B6560] pb-2">Units/Carton</th>
-                    <th className="text-left text-xs text-[#6B6560] pb-2">Total</th>
-                    <th className="pb-2" />
+                    <th className="text-left text-xs text-[#6B6560] pb-2 px-3 whitespace-nowrap">Product</th>
+                    <th className="text-left text-xs text-[#6B6560] pb-2 px-3 whitespace-nowrap">SKU</th>
+                    <th className="text-left text-xs text-[#6B6560] pb-2 px-3 whitespace-nowrap">Color / Size</th>
+                    <th className="text-left text-xs text-[#6B6560] pb-2 px-3 whitespace-nowrap">Cartons</th>
+                    <th className="text-left text-xs text-[#6B6560] pb-2 px-3 whitespace-nowrap">Units/Carton</th>
+                    <th className="text-left text-xs text-[#6B6560] pb-2 px-3 whitespace-nowrap">Total</th>
+                    <th className="pb-2 px-3" />
                   </tr>
                 </thead>
                 <tbody>
                   {items.map(item => (
                     <tr key={item.variant_id} className="border-b border-[#E0DDDA] last:border-0">
-                      <td className="py-3 text-[#1B2A4A] font-medium">{item.product_name}</td>
-                      <td className="py-3 font-mono text-xs text-[#6B6560]">{item.variant_sku}</td>
-                      <td className="py-3 text-[#6B6560] text-xs">{item.color}{item.size !== '—' ? ` / ${item.size}` : ''}</td>
-                      <td className="py-3">
+                      <td className="py-3 px-3 whitespace-nowrap text-[#1B2A4A] font-medium">{item.product_name}</td>
+                      <td className="py-3 px-3 whitespace-nowrap font-mono text-xs text-[#6B6560]">{item.variant_sku}</td>
+                      <td className="py-3 px-3 whitespace-nowrap text-[#6B6560] text-xs">{item.color}{item.size !== '—' ? ` / ${item.size}` : ''}</td>
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <input
                           type="text"
                           inputMode="numeric"
@@ -333,9 +333,9 @@ export default function NewShipmentRequestPage() {
                           }}
                           className="w-20 border border-[#E0DDDA] rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-[#1B2A4A]" />
                       </td>
-                      <td className="py-3 text-[#6B6560]">{item.units_per_carton}</td>
-                      <td className="py-3 font-semibold text-[#1B2A4A]">{item.total_units}</td>
-                      <td className="py-3">
+                      <td className="py-3 px-3 whitespace-nowrap text-[#6B6560]">{item.units_per_carton}</td>
+                      <td className="py-3 px-3 whitespace-nowrap font-semibold text-[#1B2A4A]">{item.total_units}</td>
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <button onClick={() => removeItem(item.variant_id)}
                           className="text-red-400 hover:text-red-600 text-xs">Remove</button>
                       </td>
