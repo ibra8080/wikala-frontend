@@ -53,7 +53,7 @@ export default function NewShipmentRequestPage() {
 
   const [items, setItems] = useState<RequestItem[]>([])
   const [selectedVariant, setSelectedVariant] = useState('')
-  const [cartonsCount, setCartonsCount] = useState(1)
+  const [cartonsCount, setCartonsCount] = useState('1')
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -82,6 +82,8 @@ export default function NewShipmentRequestPage() {
     p.variants.map(v => ({ ...v, product: p }))
   )
 
+  const cartonsNum = Math.max(1, parseInt(cartonsCount) || 1)
+
   const addItem = () => {
     const variantId = parseInt(selectedVariant)
     const entry = allVariants.find(v => v.id === variantId)
@@ -98,12 +100,12 @@ export default function NewShipmentRequestPage() {
       product_code: entry.product.product_code,
       color: entry.color || '—',
       size: entry.size || '—',
-      cartons_count: cartonsCount,
+      cartons_count: cartonsNum,
       units_per_carton: unitsPerCarton,
-      total_units: cartonsCount * unitsPerCarton,
+      total_units: cartonsNum * unitsPerCarton,
     }])
     setSelectedVariant('')
-    setCartonsCount(1)
+    setCartonsCount('1')
     setError('')
   }
 
@@ -266,10 +268,29 @@ export default function NewShipmentRequestPage() {
                       </option>
                     ))}
                 </select>
-                <input type="number" value={cartonsCount}
-                  onChange={e => setCartonsCount(parseInt(e.target.value) || 1)}
-                  min={1} placeholder="Cartons"
-                  className="w-28 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition" />
+                <div className="flex items-center border border-[#E0DDDA] rounded-lg overflow-hidden shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCartonsCount(String(Math.max(1, (parseInt(cartonsCount) || 1) - 1)))}
+                    className="px-3 py-2.5 text-[#1B2A4A] hover:bg-[#F5F4F0] transition text-lg leading-none"
+                    aria-label="Decrease"
+                  >−</button>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={cartonsCount}
+                    onChange={e => setCartonsCount(e.target.value.replace(/[^0-9]/g, ''))}
+                    onBlur={() => setCartonsCount(String(Math.max(1, parseInt(cartonsCount) || 1)))}
+                    className="w-14 text-center border-x border-[#E0DDDA] px-2 py-2.5 text-sm focus:outline-none"
+                    aria-label="Cartons"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCartonsCount(String((parseInt(cartonsCount) || 1) + 1))}
+                    className="px-3 py-2.5 text-[#1B2A4A] hover:bg-[#F5F4F0] transition text-lg leading-none"
+                    aria-label="Increase"
+                  >+</button>
+                </div>
                 <button onClick={addItem} disabled={!selectedVariant}
                   className="bg-[#1B2A4A] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#243860] disabled:opacity-40 transition">
                   Add
