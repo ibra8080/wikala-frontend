@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import api from '@/lib/axios'
 import Link from 'next/link'
@@ -34,8 +34,11 @@ interface RequestItem {
   total_units: number
 }
 
-export default function NewShipmentRequestPage() {
+export default function EditShipmentRequestPage() {
   const router = useRouter()
+  const params = useParams()
+  const requestId = params.id as string
+  const [notEditable, setNotEditable] = useState(false)
   const { user, _hasHydrated } = useAuthStore()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,11 +70,49 @@ export default function NewShipmentRequestPage() {
     }
   }, [])
 
+  const fetchRequest = useCallback(async () => {
+    try {
+      const res = await api.get(`/inventory/shipment-requests/${requestId}/`)
+      const data = res.data
+      if (data.status !== 'draft') {
+        setNotEditable(true)
+        return
+      }
+      setForm({
+        available_from: data.available_from || '',
+        notes: data.notes || '',
+        delivery_method: data.delivery_method || 'drop_off',
+        delivery_address: data.delivery_address || '',
+        contact_person: data.contact_person || '',
+        contact_number: data.contact_number || '',
+      })
+      setItems((data.items || []).map((it: {
+        variant: number; variant_sku: string; product_name: string;
+        product_code: string; color: string; size: string;
+        cartons_count: number; units_per_carton: number; total_units: number;
+      }) => ({
+        variant_id: it.variant,
+        variant_sku: it.variant_sku || '—',
+        product_name: it.product_name,
+        product_code: it.product_code,
+        color: it.color || '—',
+        size: it.size || '—',
+        cartons_count: it.cartons_count,
+        units_per_carton: it.units_per_carton,
+        total_units: it.total_units,
+      })))
+    } catch {
+      setNotEditable(true)
+    }
+  }, [requestId])
+
   useEffect(() => {
     if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     void fetchProducts()
-  }, [user, _hasHydrated, router, fetchProducts])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchRequest()
+  }, [user, _hasHydrated, router, fetchProducts, fetchRequest])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -133,7 +174,7 @@ export default function NewShipmentRequestPage() {
     setSubmitting(true)
     setError('')
     try {
-      await api.post('/inventory/shipment-requests/', {
+      await api.patch(`/inventory/shipment-requests/${requestId}/`, {
         available_from: form.available_from,
         status: asDraft ? 'draft' : 'submitted',
         notes: form.notes,
@@ -165,6 +206,13 @@ export default function NewShipmentRequestPage() {
     </div>
   )
 
+  if (notEditable) return (
+    <div className="text-center py-16">
+      <p className="text-sm text-[#6B6560] mb-4">This request can no longer be edited.</p>
+      <Link href="/inventory" className="text-sm text-[#C8952E] hover:underline">← Back to Shipment Requests</Link>
+    </div>
+  )
+
   return (
     <div>
       <div className="mb-6">
@@ -173,7 +221,7 @@ export default function NewShipmentRequestPage() {
         </Link>
       </div>
 
-      <h1 className="text-2xl font-bold text-[#1B2A4A] mb-2">New Shipment Request</h1>
+      <h1 className="text-2xl font-bold text-[#1B2A4A] mb-2">Edit Shipment Request</h1>
       <p className="text-sm text-[#6B6560] mb-8">
         Select the product variants (SKUs) you want to ship and specify carton quantities.
       </p>
@@ -356,7 +404,7 @@ export default function NewShipmentRequestPage() {
             <button onClick={() => handleSubmit(false)}
               disabled={submitting || items.length === 0 || !form.available_from || !form.contact_person || !form.contact_number}
               className="bg-[#C8952E] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b07d25] disabled:opacity-40 transition">
-              {submitting ? 'Submitting...' : 'Submit Request →'}
+              {submitting ? 'Submitting...' : 'Update & Submit →'}
             </button>
           </div>
         </div>
