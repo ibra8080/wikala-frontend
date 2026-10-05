@@ -347,6 +347,7 @@ export default function EditShipmentRequestPage() {
             )}
 
             {items.length > 0 && (
+              <div className="overflow-x-auto -mx-6 px-6">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#E0DDDA]">
@@ -362,7 +363,7 @@ export default function EditShipmentRequestPage() {
                 <tbody>
                   {items.map(item => (
                     <tr key={item.variant_id} className="border-b border-[#E0DDDA] last:border-0">
-                      <td className="py-3 px-3 whitespace-nowrap text-[#1B2A4A] font-medium">{item.product_name}</td>
+                      <td className="py-3 px-3 text-[#1B2A4A] font-medium min-w-[160px]">{item.product_name}</td>
                       <td className="py-3 px-3 whitespace-nowrap font-mono text-xs text-[#6B6560]">{item.variant_sku}</td>
                       <td className="py-3 px-3 whitespace-nowrap text-[#6B6560] text-xs">{item.color}{item.size !== '—' ? ` / ${item.size}` : ''}</td>
                       <td className="py-3 px-3 whitespace-nowrap">
@@ -391,6 +392,7 @@ export default function EditShipmentRequestPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
 
