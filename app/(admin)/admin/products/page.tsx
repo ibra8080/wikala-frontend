@@ -126,10 +126,9 @@ export default function AdminProductsPage() {
   }
 
   const handleUnsuspend = async (product: Product) => {
-    const prevStatus = 'approved'
     setActionLoading(product.id)
     try {
-      await api.patch(`/products/admin/${product.id}/`, { status: prevStatus })
+      await api.patch(`/products/admin/${product.id}/`, { status: 'unsuspend' })
       await fetchProducts()
     } finally {
       setActionLoading(null)
