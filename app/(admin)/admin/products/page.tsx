@@ -71,28 +71,59 @@ export default function AdminProductsPage() {
   const [actionLoading, setActionLoading] = useState<number | null>(null)
   const [rejectingId, setRejectingId] = useState<number | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [counts, setCounts] = useState<Record<string, number>>({})
+  const [search, setSearch] = useState('')
+  const [ordering, setOrdering] = useState('-created_at')
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [hasLoaded, setHasLoaded] = useState(false)
+  const PAGE_SIZE = 50
+
+  const fetchCounts = useCallback(async () => {
+    try {
+      const res = await api.get('/products/admin/counts/')
+      setCounts(res.data)
+    } catch {}
+  }, [])
 
   const fetchProducts = useCallback(async () => {
+    setLoading(true)
+    const params = new URLSearchParams({ page: String(page), ordering })
+    if (filter !== 'all') params.set('status', filter)
+    if (search.trim()) params.set('search', search.trim())
     try {
-      const res = await api.get('/products/admin/list/')
-      setProducts(res.data)
+      const res = await api.get(`/products/admin/list/?${params.toString()}`)
+      setProducts(res.data.results ?? res.data)
+      setTotalCount(res.data.count ?? (res.data.results ?? res.data).length)
+    } catch (e: unknown) {
+      // If the current page no longer exists (e.g. last item left the tab), step back.
+      const status = (e as { response?: { status?: number } })?.response?.status
+      if (status === 404 && page > 1) {
+        setPage(p => p - 1)
+      }
     } finally {
       setLoading(false)
+      setHasLoaded(true)
     }
-  }, [])
+  }, [page, ordering, filter, search])
 
   useEffect(() => {
     if (!_hasHydrated) return
     if (!user) { router.push('/login'); return }
     if (user.role !== 'admin') { router.push('/dashboard'); return }
-    void fetchProducts()
-  }, [user, _hasHydrated, router, fetchProducts])
+    const t = setTimeout(() => {
+      void fetchProducts()
+      void fetchCounts()
+    }, 300)
+    return () => clearTimeout(t)
+  }, [user, _hasHydrated, router, fetchProducts, fetchCounts])
 
   const handleApprove = async (productId: number) => {
     setActionLoading(productId)
     try {
       await api.patch(`/products/admin/${productId}/`, { status: 'approved' })
       await fetchProducts()
+      await fetchCounts()
     } finally {
       setActionLoading(null)
     }
@@ -109,6 +140,7 @@ export default function AdminProductsPage() {
       setRejectingId(null)
       setRejectReason('')
       await fetchProducts()
+      await fetchCounts()
     } finally {
       setActionLoading(null)
     }
@@ -120,6 +152,7 @@ export default function AdminProductsPage() {
     try {
       await api.patch(`/products/admin/${productId}/`, { status: 'suspended' })
       await fetchProducts()
+      await fetchCounts()
     } finally {
       setActionLoading(null)
     }
@@ -130,6 +163,7 @@ export default function AdminProductsPage() {
     try {
       await api.patch(`/products/admin/${product.id}/`, { status: 'unsuspend' })
       await fetchProducts()
+      await fetchCounts()
     } finally {
       setActionLoading(null)
     }
@@ -141,6 +175,7 @@ export default function AdminProductsPage() {
     try {
       await api.delete(`/products/admin/${productId}/delete/`)
       await fetchProducts()
+      await fetchCounts()
     } catch {
       alert('Failed to delete product. Please try again.')
     } finally {
@@ -211,6 +246,7 @@ export default function AdminProductsPage() {
       })
       setSelectedIds([])
       await fetchProducts()
+      await fetchCounts()
     } catch (err: unknown) {
       const e = err as { response?: { data?: { products?: { name: string; issues: string[] }[] } } }
       const blocked = e.response?.data?.products
@@ -234,6 +270,7 @@ export default function AdminProductsPage() {
       })
       setSelectedIds([])
       await fetchProducts()
+      await fetchCounts()
     } catch {
       alert('Failed to return to Approved. Please try again.')
     } finally {
@@ -241,11 +278,12 @@ export default function AdminProductsPage() {
     }
   }
 
-  const filtered = products.filter(p => filter === 'all' ? true : p.status === filter)
+  const filtered = products
   const allSelected = filtered.length > 0 && filtered.every(p => selectedIds.includes(p.id))
   const someSelected = filtered.some(p => selectedIds.includes(p.id))
 
-  if (loading) return (
+  // Full-page spinner only on first load, so the search input keeps focus while refetching
+  if (loading && !hasLoaded) return (
     <div className="flex items-center justify-center h-64">
       <div className="w-6 h-6 border-2 border-[#C8952E] border-t-transparent rounded-full animate-spin" />
     </div>
@@ -256,7 +294,7 @@ export default function AdminProductsPage() {
       <div className="mb-8 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1B2A4A]">Products</h1>
-          <p className="text-sm text-[#6B6560] mt-1">{products.length} total products</p>
+          <p className="text-sm text-[#6B6560] mt-1">{counts.all ?? 0} total products</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -317,15 +355,38 @@ export default function AdminProductsPage() {
       {/* Tabs */}
       <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map(tab => (
-          <button key={tab.key} onClick={() => { setFilter(tab.key); setSelectedIds([]) }}
+          <button key={tab.key} onClick={() => { setFilter(tab.key); setSelectedIds([]); setSelectedSkus(new Set()); setExpandedId(null); setPage(1) }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition
               ${filter === tab.key ? 'bg-[#1B2A4A] text-white' : 'bg-[#F5F4F0] text-[#6B6560] hover:bg-[#EEECEA]'}`}>
             {tab.label}
             <span className="ml-2 text-xs opacity-70">
-              {tab.key === 'all' ? products.length : products.filter(p => p.status === tab.key).length}
+              {tab.key === 'all' ? (counts.all ?? 0) : (counts[tab.key] ?? 0)}
             </span>
           </button>
         ))}
+      </div>
+
+      {/* Search + Sort */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <input
+          type="text"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(1); setSelectedIds([]); setSelectedSkus(new Set()) }}
+          placeholder="Search by name, code, SKU, or seller..."
+          className="flex-1 border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition"
+        />
+        <select
+          value={ordering}
+          onChange={e => { setOrdering(e.target.value); setPage(1); setSelectedIds([]); setSelectedSkus(new Set()) }}
+          className="border border-[#E0DDDA] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B2A4A] transition sm:w-48"
+        >
+          <option value="-created_at">Newest first</option>
+          <option value="created_at">Oldest first</option>
+          <option value="name_en">Name (A-Z)</option>
+          <option value="-name_en">Name (Z-A)</option>
+          <option value="price">Price (low-high)</option>
+          <option value="-price">Price (high-low)</option>
+        </select>
       </div>
 
       {/* Table */}
@@ -340,7 +401,7 @@ export default function AdminProductsPage() {
                   ref={el => { if (el) el.indeterminate = !allSelected && someSelected }}
                   onChange={() => toggleSelectAll(filtered)}
                   className="w-4 h-4 accent-[#C8952E] cursor-pointer"
-                  title={allSelected ? 'Deselect all' : 'Select all'}
+                  title={allSelected ? 'Deselect all (this page)' : 'Select all (this page)'}
                 />
               </th>
               <th className="px-3 py-4 w-8" />
@@ -514,6 +575,18 @@ export default function AdminProductsPage() {
           </tbody>
         </table>
       </div>
+
+      {totalCount > PAGE_SIZE && (
+        <div className="flex items-center justify-between mt-6">
+          <button onClick={() => { setPage(p => Math.max(1, p - 1)); setSelectedIds([]); setSelectedSkus(new Set()) }}
+            disabled={page === 1}
+            className="border border-[#E0DDDA] text-[#1B2A4A] px-4 py-2 rounded-lg text-sm disabled:opacity-40 transition">← Previous</button>
+          <span className="text-sm text-[#6B6560]">Page {page} of {Math.ceil(totalCount / PAGE_SIZE)}</span>
+          <button onClick={() => { setPage(p => p + 1); setSelectedIds([]); setSelectedSkus(new Set()) }}
+            disabled={page >= Math.ceil(totalCount / PAGE_SIZE)}
+            className="border border-[#E0DDDA] text-[#1B2A4A] px-4 py-2 rounded-lg text-sm disabled:opacity-40 transition">Next →</button>
+        </div>
+      )}
 
       <BarcodeLabels
         open={barcodeOpen}
